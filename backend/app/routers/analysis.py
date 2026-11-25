@@ -18,6 +18,8 @@ from ..db import get_db
 from ..models import AnalysisDashboard, User
 from ..security import BANSUK_ROLES, current_user
 from ..services.explore import catalog, run_query
+from ..services.explore_events import catalog as events_catalog
+from ..services.explore_events import run_events
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
@@ -29,7 +31,7 @@ def bansuk_user(user: User = Depends(current_user)) -> User:
 
 
 class Query(BaseModel):
-    source: Literal["production"] = "production"
+    source: Literal["production", "necropsy", "lab"] = "production"
     metric: str = "lay_rate"
     x: str = "date"
     group: str = "flock"
@@ -43,16 +45,20 @@ class Query(BaseModel):
     program: Literal["any", "applied", "not"] = "any"
     house_kind: Literal["laying", "rearing", "all"] = "laying"
     smooth: bool = False
+    disease: str | None = Field(default=None, max_length=40)  # 부검·검사: 질병 하나만
+    antigen: str | None = Field(default=None, max_length=30)  # 검사: 항원 하나만 (평균 역가군)
 
 
 @router.get("/catalog")
 def get_catalog(user: User = Depends(bansuk_user)):
-    return catalog()
+    return {**catalog(), "events": events_catalog()}
 
 
 @router.post("/query")
 def query(q: Query, user: User = Depends(bansuk_user), db: Session = Depends(get_db)):
     try:
+        if q.source != "production":
+            return run_events(db, q.model_dump(), allowed_farm_ids=None)
         return run_query(db, q.model_dump(), allowed_farm_ids=None)
     except ValueError as e:
         raise HTTPException(400, str(e)) from e

@@ -491,3 +491,68 @@ class Vaccination(Base):
     note: Mapped[str | None] = mapped_column(String(500))
     created_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+# ---------------------------------------------------------------------------
+# 질병 검사 (반석 검사 성적서)
+# ---------------------------------------------------------------------------
+
+class LabSubmission(Base):
+    """검사 의뢰 한 건 = 성적서 한 장.
+
+    kind: pcr (PCR·RT-PCR 등 정성 검사) | serology (혈청 항체가) | culture (세균 배양) | other
+    status: draft (작성 중, 농장에 안 보임) | issued (발행, 농장에 보임)
+    """
+
+    __tablename__ = "lab_submission"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    report_no: Mapped[str | None] = mapped_column(String(40), index=True)  # 접수번호 (예: BS26-PCR-0040)
+    kind: Mapped[str] = mapped_column(String(20), default="pcr")
+    status: Mapped[str] = mapped_column(String(10), default="draft")
+    farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"), index=True)
+    house_id: Mapped[int | None] = mapped_column(ForeignKey("house.id"))
+    flock_id: Mapped[int | None] = mapped_column(ForeignKey("flock.id"), index=True)
+    case_id: Mapped[int | None] = mapped_column(ForeignKey("necropsy_case.id"), index=True)  # 부검 건에서 의뢰한 검사
+    requester: Mapped[str | None] = mapped_column(String(60))  # 의뢰자
+    requested_on: Mapped[dt.date | None] = mapped_column(Date)  # 의뢰일
+    sampled_on: Mapped[dt.date | None] = mapped_column(Date, index=True)  # 시료채취일·채혈일
+    issued_on: Mapped[dt.date | None] = mapped_column(Date)  # 발행일자
+    age_days: Mapped[int | None] = mapped_column(Integer)  # 채취일 일령
+    method: Mapped[str | None] = mapped_column(String(60))  # 검사방법 (RT-PCR, PCR, HI, ELISA, 응집 …)
+    target: Mapped[str | None] = mapped_column(String(120))  # 검사질병 (예: APV (115 bp))
+    disease: Mapped[str | None] = mapped_column(String(40))  # 집계용 질병 코드 (예: apv, salmonella)
+    opinion: Mapped[str | None] = mapped_column(Text)  # 검사소견
+    source: Mapped[str] = mapped_column(String(20), default="manual")  # manual | import
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class LabSample(Base):
+    """정성 검사의 시료별 결과 (성적서의 sample / 결과 표)."""
+
+    __tablename__ = "lab_sample"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    submission_id: Mapped[int] = mapped_column(ForeignKey("lab_submission.id"), index=True)
+    sample: Mapped[str] = mapped_column(String(120))  # 예: 기관, 맹장편도 등 / 의심균주(B/C)
+    result: Mapped[str] = mapped_column(String(10))  # positive | negative | suspect | na
+    value: Mapped[str | None] = mapped_column(String(40))  # Ct값 등
+    control: Mapped[bool] = mapped_column(Boolean, default=False)  # 양성·음성 대조
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class SeroResult(Base):
+    """혈청 항체가: 항원 하나 × 구분(층·차량 등) 하나의 역가군 분포."""
+
+    __tablename__ = "sero_result"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    submission_id: Mapped[int] = mapped_column(ForeignKey("lab_submission.id"), index=True)
+    antigen: Mapped[str] = mapped_column(String(30))  # nd_hi, lpai_hi, ib_elisa …
+    group_label: Mapped[str | None] = mapped_column(String(40))  # 1층, 2층, 1호차 … (없으면 전체)
+    counts: Mapped[list] = mapped_column(JSON, default=list)  # 역가군 0,1,2,… 마리 수
+    n: Mapped[int] = mapped_column(Integer, default=0)
+    mean: Mapped[float | None] = mapped_column(Float)  # 평균 역가군 (counts로 계산)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)

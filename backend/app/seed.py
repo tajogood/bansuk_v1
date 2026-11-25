@@ -163,6 +163,8 @@ def seed(reset: bool = True, days: int = 45) -> None:
     db.commit()
     _seed_cases(db, farm, owner, vet, today)
     _seed_vaccines(db, farm, vet, today)
+    _seed_lab(db, farm, vet, today)
+    _seed_region_cases(db, vet, today)
     print(f"데모 데이터 생성 완료: {DEMO_FARM}, 계군 {len(houses) + 1}개 (동마다 과거 계군 3개 포함)")
 
 
@@ -312,6 +314,114 @@ def _seed_vaccines(db, farm, vet, today) -> None:
                            birds=flock.placed_count, lot=f"L{day:%y%m}{it.age_days:03d}", performed_by=vet.id, created_by=vet.id))
     db.commit()
 
+
+def _seed_lab(db, farm, vet, today) -> None:
+    """데모 검사 결과: 2동 혈청 항체가 3회 (층별), 4동 부검 건에서 의뢰한 PCR, 작성 중인 PCR 하나."""
+    from .lab_catalog import mean_of
+    from .models import FlockLocation, House, LabSample, LabSubmission, NecropsyCase, SeroResult
+    from .services.flocks import age_days as _age
+
+    houses = {h.name: h for h in db.query(House).filter_by(farm_id=farm.id)}
+    rnd = random.Random(7)
+
+    def flock_at(h, day):
+        loc = (db.query(FlockLocation).filter(FlockLocation.house_id == h.id, FlockLocation.from_date <= day)
+               .filter((FlockLocation.to_date.is_(None)) | (FlockLocation.to_date >= day)).first())
+        return loc.flock_id if loc else None
+
+    def sub(h, day, **kw):
+        from .models import Flock
+        fid = flock_at(h, day)
+        s_ = LabSubmission(farm_id=farm.id, house_id=h.id, flock_id=fid, sampled_on=day, requested_on=day,
+                           age_days=_age(db.get(Flock, fid), day) if fid else None, created_by=vet.id, **kw)
+        db.add(s_)
+        db.flush()
+        return s_
+
+    def dist(center, n, spread=1.6):
+        counts = [0] * 19
+        for _ in range(n):
+            counts[max(0, min(18, round(rnd.gauss(center, spread))))] += 1
+        while counts and counts[-1] == 0:
+            counts.pop()
+        return counts
+
+    h2 = houses["2동"]
+    centers = {"lpai_hi": [5.2, 6.0, 5.6], "ib_elisa": [5.0, 6.8, 7.4], "apv_elisa": [4.4, 6.2, 7.0], "mg_elisa": [1.6, 2.4, 3.8]}
+    for k, ago in enumerate([110, 70, 25]):
+        day = today - dt.timedelta(days=ago)
+        s_ = sub(h2, day, kind="serology", status="issued", issued_on=day + dt.timedelta(days=3), method="HI/ELISA",
+                 report_no=f"DEMO-SERO-{k + 1:03d}")
+        i = 0
+        for antigen, cs in centers.items():
+            for label in ("1층", "2층"):
+                counts = dist(cs[k] + (0.3 if label == "2층" else 0), 8)
+                db.add(SeroResult(submission_id=s_.id, antigen=antigen, group_label=label, counts=counts, n=sum(counts),
+                                  mean=mean_of(counts), sort_order=i))
+                i += 1
+
+    c3 = db.query(NecropsyCase).filter_by(farm_id=farm.id, house_id=houses["4동"].id).first()
+    day = today - dt.timedelta(days=8)
+    s_ = sub(houses["4동"], day, kind="pcr", status="issued", issued_on=day + dt.timedelta(days=2), case_id=c3.id if c3 else None,
+             report_no="DEMO-PCR-0001", method="RT-PCR", target="IB (RT-PCR)", disease="ib",
+             opinion="의뢰하신 가검물에서 IB가 음성으로 확인되었습니다.")
+    for i, (smp, res, ctl) in enumerate([("IB 양성 대조", "positive", True), ("IB 음성 대조", "negative", True),
+                                          ("기관, 신장", "negative", False)]):
+        db.add(LabSample(submission_id=s_.id, sample=smp, result=res, control=ctl, sort_order=i))
+    if c3:
+        c3.final_diagnosis = "지방간 출혈 증후군 (조직 검사 확인). IB 음성."
+
+    day = today - dt.timedelta(days=1)
+    s_ = sub(houses["2동"], day, kind="pcr", status="draft", report_no="DEMO-PCR-0002", method="RT-PCR",
+             target="APV (115 bp)", disease="apv")
+    for i, (smp, res, ctl) in enumerate([("APV 양성 대조", "positive", True), ("APV 음성 대조", "negative", True),
+                                          ("기관, 맹장편도", "positive", False)]):
+        db.add(LabSample(submission_id=s_.id, sample=smp, result=res, control=ctl, sort_order=i))
+    db.commit()
+
+
+def _seed_region_cases(db, vet, today) -> None:
+    """최근 유행 질병 화면용: 지역별 가상 농장의 부검 건과 PCR 양성 결과 (일일 기록 없음)."""
+    from .models import Farm, House, LabSample, LabSubmission, NecropsyCase
+
+    rnd = random.Random(11)
+    farms = []
+    for name, region in [("가상농장 가", "경기"), ("가상농장 나", "경기"), ("가상농장 다", "충남"), ("가상농장 라", "충북"),
+                         ("가상농장 마", "전북"), ("가상농장 바", "경북"), ("가상농장 사", "경남")]:
+        f = Farm(name=name, region=region, contract_type="program")
+        db.add(f)
+        db.flush()
+        h = House(farm_id=f.id, name="1동", kind="laying", sort_order=0)
+        db.add(h)
+        db.flush()
+        farms.append((f, h))
+    # (질병, 최근 몇 주 안, 건수) — 최근 APV·IB가 늘어나는 모양
+    plan = [("apv", 4, 7), ("apv", 12, 2), ("ib", 6, 5), ("ib", 12, 2), ("mg_ms", 12, 4), ("colibacillosis", 12, 5),
+            ("lpai", 3, 2), ("coryza", 8, 2), ("fowl_typhoid", 12, 1), ("red_mite", 10, 2)]
+    lab_target = {"apv": ("RT-PCR", "APV (115 bp)"), "ib": ("RT-PCR", "IB"), "mg_ms": ("PCR", "MG"),
+                  "lpai": ("RT-PCR", "AI H9"), "coryza": ("PCR", "Av. paragallinarum"), "fowl_typhoid": ("배양", "S. Gallinarum")}
+    no = 100
+    for disease, weeks, n in plan:
+        for _ in range(n):
+            f, h = rnd.choice(farms)
+            day = today - dt.timedelta(days=rnd.randint(0, weeks * 7 - 1))
+            at = dt.datetime.combine(day, dt.time(10, 0))
+            c = NecropsyCase(farm_id=f.id, house_id=h.id, status="shared", reported_at=at - dt.timedelta(days=1),
+                             dead_count=rnd.randint(8, 60), onset="yesterday", symptoms=[], proposals=[], scheduled_at=at,
+                             vet_id=vet.id, performed_at=at, birds_examined=rnd.randint(3, 8), findings=[], samples=["pcr"],
+                             suspected=[disease], shared_at=at + dt.timedelta(hours=4))
+            db.add(c)
+            db.flush()
+            if disease in lab_target and rnd.random() < 0.8:
+                method, target = lab_target[disease]
+                no += 1
+                s_ = LabSubmission(farm_id=f.id, house_id=h.id, case_id=c.id, kind="culture" if method == "배양" else "pcr",
+                                   status="issued", sampled_on=day, issued_on=day + dt.timedelta(days=2), method=method,
+                                   target=target, disease=disease, report_no=f"DEMO-PCR-{no:04d}", created_by=vet.id)
+                db.add(s_)
+                db.flush()
+                db.add(LabSample(submission_id=s_.id, sample="가검물", result="positive", sort_order=0))
+    db.commit()
 
 
 if __name__ == "__main__":

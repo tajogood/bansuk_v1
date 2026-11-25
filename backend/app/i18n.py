@@ -29,6 +29,37 @@ def pick_lang(header: str | None) -> str:
 
 
 EXACT: dict[str, str] = {
+    # 질병 (분석기 계열 이름)
+    "고병원성 조류인플루엔자": "Highly pathogenic avian influenza", "저병원성 조류인플루엔자 (H9N2)": "Low pathogenic avian influenza (H9N2)",
+    "뉴캐슬병": "Newcastle disease", "전염성 기관지염": "Infectious bronchitis", "전염성 후두기관염": "Infectious laryngotracheitis",
+    "마이코플라스마 (MG·MS)": "Mycoplasma (MG/MS)", "가금티푸스": "Fowl typhoid", "살모넬라": "Salmonella",
+    "대장균증": "Colibacillosis", "괴사성 장염": "Necrotic enteritis", "콕시듐증": "Coccidiosis", "마렉병": "Marek's disease",
+    "림프성 백혈병": "Lymphoid leukosis", "계두": "Fowl pox", "산란저하증": "Egg drop syndrome",
+    "지방간 출혈 증후군": "Fatty liver hemorrhagic syndrome", "난황성 복막염": "Egg yolk peritonitis", "닭진드기": "Red mite",
+    "열 스트레스": "Heat stress", "전염성 F낭병 (감보로)": "Infectious bursal disease (Gumboro)", "조류뇌척수염": "Avian encephalomyelitis",
+    "전염성 코라이자": "Infectious coryza", "조류 메타뉴모바이러스 (APV)": "Avian metapneumovirus (APV)",
+    "닭 전염성 빈혈 (CIAV)": "Chicken infectious anemia (CIAV)", "레오바이러스": "Reovirus", "기타": "Other",
+    # 분석기: 부검·검사 출처
+    "부검 기록": "Necropsy records", "검사 결과": "Lab results",
+    "부검 건수": "Necropsy cases", "신고 폐사수": "Reported deaths", "검사 건수": "Tests",
+    "양성 건수": "Positive tests", "양성 비율": "Positive rate", "평균 역가군": "Mean titer group",
+    "질병별": "By disease", "지역별": "By region", "항원별": "By antigen", "건": "cases",
+    "대조를 뺀 시료 중 하나라도 양성이면 양성 (PCR·배양)": "Positive if any non-control sample is positive (PCR, culture)",
+    "혈청 검사의 층·차량별 평균을 시료수로 가중 평균": "Weighted by sample count across groups in serology tests",
+    "의심 질병이 여러 개면 질병마다 한 번씩 셉니다": "A case with several suspected diseases counts once per disease",
+    # 검사 결과
+    "검사 결과를 찾을 수 없습니다": "Lab result not found",
+    "이 농장의 부검 건이 아닙니다": "That necropsy case does not belong to this farm",
+    "모르는 항원입니다": "Unknown antigen",
+    "역가군 마리 수가 올바르지 않습니다": "Titer group counts are not valid",
+    "이미 발행한 결과입니다": "This result is already issued",
+    "결과를 한 줄 이상 입력해 주세요": "Enter at least one result row",
+    "발행한 결과는 먼저 발행을 취소해야 지울 수 있습니다": "Withdraw an issued result before deleting it",
+    "파일이 너무 큽니다": "The file is too large",
+    "파일을 읽을 수 없습니다. 양식을 확인해 주세요": "Could not read the file. Check the template",
+    "등록되지 않은 성적서 양식입니다": "Unknown report format",
+    "'혈청' 또는 'PCR' 시트에서 읽을 줄이 없습니다": "No rows found in the '혈청' or 'PCR' sheet",
+    "반석 표준 입력 양식 (엑셀)": "Bansuk standard input template (Excel)",
     # 규격
     "왕란": "Jumbo", "특란": "Extra large", "대란": "Large", "중란": "Medium", "소란": "Small",
     "쌍란": "Double yolk", "무대": "Mudae", "무중": "Mujung", "크랙": "Cracked", "파란": "Broken",
@@ -153,6 +184,8 @@ EXACT: dict[str, str] = {
     "접종 기록을 찾을 수 없습니다": "Vaccination record not found",
     "백신 저장": "Vaccine saved", "백신 프로그램 저장": "Program saved", "백신 프로그램 새 버전": "New program version",
     "계군 프로그램 적용": "Program applied to flock", "접종 기록": "Vaccination recorded", "접종 기록 삭제": "Vaccination deleted",
+    "검사 결과 입력": "Lab result entered", "검사 결과 수정": "Lab result edited", "검사 결과 발행": "Lab result issued",
+    "검사 결과 발행 취소": "Lab result withdrawn", "검사 결과 삭제": "Lab result deleted", "성적서 파일 올림": "Lab report file uploaded",
     # 분석기 카탈로그
     "생산 기록": "Production records",
     "산란율": "Lay rate", "총 산란수": "Total eggs", "수수(평균)": "Birds (average)", "폐사수": "Mortality",
@@ -168,6 +201,9 @@ EXACT: dict[str, str] = {
 }
 
 PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"^혈청 (\d+)행: 모르는 항원 '(.*)'$"), "Serology row {0}: unknown antigen '{1}'"),
+    (re.compile(r"^혈청 (\d+)행: 농장과 채혈일은 꼭 적어 주세요$"), "Serology row {0}: farm and sampling date are required"),
+    (re.compile(r"^PCR (\d+)행: 농장을 적어 주세요$"), "PCR row {0}: farm is required"),
     (re.compile(r"^(.+) 비율$"), "{0} share"),
     (re.compile(r"^산란율이 ([\d.]+)%로 100%를 넘습니다\. 집란 시간이나 입력값을 확인해 주세요\.$"),
      "Lay rate is {0}%, over 100%. Check the egg collection time or the numbers entered."),
@@ -210,6 +246,7 @@ FREE_TEXT_KEYS = {
     "name", "text", "note", "message", "reason", "summary", "advice", "internal_note", "report_note",
     "final_diagnosis", "caption", "reviewer_note", "region", "farm", "house", "by", "author", "actor", "target",
     "suspected", "program", "breed", "hatchery", "issued_by", "owner",
+    "sample", "method", "opinion", "group_label", "report_no", "requester",
 }
 
 
