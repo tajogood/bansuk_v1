@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import LangToggle from "@/components/LangToggle";
+import NotificationBell from "@/components/NotificationBell";
 import { useLang, useT } from "@/lib/i18n";
 import ReportView from "@/components/ReportView";
 import { api, downloadCsv, loadSession } from "@/lib/api";
@@ -185,6 +186,7 @@ export default function ReportPage() {
             )}
           </>
         )}
+        <NotificationBell token={session.token} />
       </div>
 
       {issueOpen && (

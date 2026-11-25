@@ -24,6 +24,13 @@ export default function NotificationBell({ token }: { token: string }) {
       .catch(() => {});
   }, [token]);
 
+  // 홈 화면에 설치한 앱이면 아이콘에도 빨간 표시 (지원하는 기기만)
+  useEffect(() => {
+    const nav = navigator as Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> };
+    if (unread > 0) nav.setAppBadge?.(unread).catch(() => {});
+    else nav.clearAppBadge?.().catch(() => {});
+  }, [unread]);
+
   useEffect(() => {
     refresh();
     const id = window.setInterval(refresh, POLL_MS);

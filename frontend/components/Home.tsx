@@ -54,11 +54,11 @@ export default function Home(p: Props) {
           <h1 className="farm-name">{p.day?.farm.name ?? p.farms[0]?.name}</h1>
         )}
         <span className="head-tools">
-          <NotificationBell token={p.token} />
           <LangToggle className="link" />
           <button type="button" className="link" onClick={p.onLogout}>
             {t("로그아웃")}
           </button>
+          <NotificationBell token={p.token} />
         </span>
       </header>
 

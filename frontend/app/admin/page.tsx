@@ -223,9 +223,9 @@ export default function AdminPage() {
         <a href="/" className="an-back">‹ {t("생산 기록")}</a>
         <h1>{t("계정·농장 관리")}</h1>
         <span className="an-spacer" />
+        <span className="an-muted">{session.user.name}</span>
         <LangToggle />
         <NotificationBell token={session.token} />
-        <span className="an-muted">{session.user.name}</span>
       </header>
       <nav className="ad-tabs" role="tablist">
         {(

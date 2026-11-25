@@ -255,9 +255,9 @@ export default function AnalysisPage() {
         <h1>{t("데이터 분석기")}</h1>
         <span className="an-spacer" />
         <a href="/cases/" className="an-link">{t("폐사·부검")}</a>
+        <a href="/report/" className="an-link">{t("계군 성적 보고서")}</a>
         <LangToggle />
         <NotificationBell token={session.token} />
-        <a href="/report/" className="an-link">{t("계군 성적 보고서")}</a>
       </header>
 
       <div className="an-body">
