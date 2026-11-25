@@ -1,0 +1,522 @@
+/* 질병 검사 결과 · 최근 유행 질병 (cases.css 위에 얹는다) */
+.lb-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 980px;
+}
+.lb-head-link {
+  color: var(--ink-2);
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+@media (max-width: 560px) {
+  .lb-head-link {
+    display: none;
+  }
+}
+.lb-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.lb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  cursor: pointer;
+}
+a.lb-btn.cs-primary {
+  color: #fff;
+}
+.lb-file input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.lb-file:focus-within {
+  outline: 2px solid var(--barn);
+  outline-offset: 2px;
+}
+.lb-note {
+  margin: 0;
+  font-size: 13px;
+}
+.lb-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.lb-filters select,
+.lb-trend select {
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 15px;
+}
+.lb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.lb-chips button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-weight: 700;
+  font-size: 14px;
+}
+.lb-chips button[aria-pressed="true"] {
+  border-color: var(--barn);
+  background: var(--barn);
+  color: #fff;
+}
+
+/* 목록 */
+.lb-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lb-list li + li {
+  border-top: 1px solid #edf1ee;
+}
+.lb-list a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 2px;
+  color: inherit;
+  text-decoration: none;
+}
+.lb-date {
+  flex: none;
+  width: 92px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.lb-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.lb-main small {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.lb-badge {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.lb-badge.is-draft {
+  background: var(--caution-bg);
+  color: var(--caution);
+}
+.lb-badge.is-pos {
+  background: #fbe4e1;
+  color: #9b2c22;
+}
+.lb-badge.is-neg {
+  background: #e3f1e9;
+  color: var(--barn);
+}
+
+/* 결과 보기 */
+.lb-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.lb-sheet-head p,
+.lb-sheet-head h2 {
+  margin: 0;
+}
+.lb-sheet-head h2 {
+  font-size: 20px;
+}
+.lb-kv {
+  margin-bottom: 14px;
+}
+@media (min-width: 700px) {
+  .lb-kv {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.lb-samples th {
+  width: auto;
+}
+.lb-samples tr.is-control td {
+  color: var(--ink-3);
+}
+.lb-res {
+  font-weight: 800;
+}
+.lb-res.is-positive {
+  color: #9b2c22;
+}
+.lb-res.is-negative {
+  color: var(--barn);
+}
+.lb-res.is-suspect {
+  color: var(--caution);
+}
+.lb-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.lb-sero {
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.lb-sero th,
+.lb-sero td {
+  padding: 6px 7px;
+  border-bottom: 1px solid #edf1ee;
+  text-align: left;
+}
+.lb-sero thead th {
+  background: #f3f5f3;
+  font-weight: 700;
+}
+.lb-sero .num {
+  min-width: 22px;
+  text-align: center;
+}
+.lb-sero tr.is-first td,
+.lb-sero tr.is-first th {
+  border-top: 2px solid #d8dfda;
+}
+.lb-mean {
+  font-weight: 800;
+  color: var(--barn);
+}
+.lb-actions {
+  justify-content: flex-end;
+}
+
+/* 입력 */
+.lb-form .cs-sec h2 {
+  margin-bottom: 10px;
+}
+.lb-grid {
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 700px) {
+  .lb-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.lb-grid label,
+.lb-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 14px;
+}
+.lb-grid input,
+.lb-grid select,
+.lb-row input,
+.lb-row select,
+.lb-block textarea {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 400;
+}
+.lb-block textarea {
+  padding: 10px;
+  font: inherit;
+}
+.lb-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.lb-row input,
+.lb-row select {
+  flex: 1;
+  min-width: 140px;
+}
+.lb-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+.lb-seg {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.lb-seg button {
+  min-height: 44px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 700;
+}
+.lb-seg button[aria-pressed="true"] {
+  border-color: var(--ink-2);
+  background: var(--ink-2);
+  color: #fff;
+}
+.lb-seg button.is-positive[aria-pressed="true"] {
+  border-color: #9b2c22;
+  background: #9b2c22;
+}
+.lb-seg button.is-negative[aria-pressed="true"] {
+  border-color: var(--barn);
+  background: var(--barn);
+}
+.lb-samples-edit,
+.lb-sero-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lb-samples-edit > button,
+.lb-sero-edit > button {
+  align-self: flex-start;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1.5px dashed var(--line);
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 700;
+}
+.lb-sero-edit fieldset {
+  margin: 0;
+  min-width: 0;
+}
+.lb-counts {
+  display: grid;
+  grid-template-columns: repeat(19, 40px);
+  gap: 4px;
+}
+.lb-counts label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.lb-counts input {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  text-align: center;
+  font-size: 15px;
+}
+
+/* 항체가 차트 */
+.tc-grid {
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 700px) {
+  .tc-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.tc-card {
+  margin: 0;
+  padding: 10px 10px 6px;
+  border: 1px solid #e4e9e5;
+  border-radius: 10px;
+}
+.tc-card figcaption {
+  font-weight: 800;
+  font-size: 14px;
+}
+.tc-card svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.tc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.tc-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 2px;
+  vertical-align: -1px;
+}
+
+/* 최근 유행 질병 */
+.ep-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.ep-summary div {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.ep-summary dt {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.ep-summary dd {
+  margin: 2px 0 0;
+  font-size: 24px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.ep-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ep-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 14px;
+  padding: 12px 0;
+  border-top: 1px solid #edf1ee;
+}
+.ep-item:first-child {
+  border-top: 0;
+}
+.ep-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.ep-name strong {
+  font-size: 16px;
+}
+.ep-meta {
+  grid-column: 1 / -1;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.ep-trend {
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.ep-trend.is-up {
+  color: #9b2c22;
+}
+.ep-trend.is-down {
+  color: var(--barn);
+}
+.ep-spark {
+  display: block;
+  width: 150px;
+  height: 34px;
+}
+.ep-spark rect {
+  fill: #b9c7bd;
+}
+.ep-spark rect.is-recent {
+  fill: #9b2c22;
+}
+.ep-cols {
+  display: grid;
+  gap: 14px;
+}
+@media (min-width: 900px) {
+  .ep-cols {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+.ep-region th {
+  width: auto !important;
+}
+.ep-region th,
+.ep-region td:nth-child(1),
+.ep-region td:nth-child(2) {
+  white-space: nowrap;
+}
+.ep-region td:nth-child(2) {
+  font-variant-numeric: tabular-nums;
+}
+.ep-recent {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+.ep-recent li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  padding: 8px 0;
+  border-top: 1px solid #edf1ee;
+}
+.ep-recent li:first-child {
+  border-top: 0;
+}
+.ep-recent time {
+  flex: none;
+  width: 92px;
+  white-space: nowrap;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.ep-recent small {
+  color: var(--ink-3);
+}
+.ep-conf {
+  color: #9b2c22;
+  font-weight: 700;
+}
+@media (max-width: 560px) {
+  .ep-spark {
+    width: 96px;
+  }
+  .ep-summary dd {
+    font-size: 20px;
+  }
+}

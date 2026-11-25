@@ -97,7 +97,7 @@ export default function NotificationBell({ token }: { token: string }) {
             <ul>
               {items.map((n) => (
                 <li key={n.id}>
-                  <a href={n.case_id ? `/cases/?id=${n.case_id}` : "#"} className={n.read ? "" : "is-unread"}>
+                  <a href={n.data?.lab_id ? `/lab/?id=${n.data.lab_id}` : n.case_id ? `/cases/?id=${n.case_id}` : "#"} className={n.read ? "" : "is-unread"}>
                     <span>{notificationText(n.kind, n.data)}</span>
                     <small>{timeAgo(n.at)}</small>
                   </a>

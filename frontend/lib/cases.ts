@@ -89,6 +89,9 @@ export const DISEASES: Opt[] = [
   { code: "ibd", label: k("전염성 F낭병 (감보로)") },
   { code: "ae", label: k("조류뇌척수염") },
   { code: "coryza", label: k("전염성 코라이자") },
+  { code: "apv", label: k("조류 메타뉴모바이러스 (APV)") },
+  { code: "ciav", label: k("닭 전염성 빈혈 (CIAV)") },
+  { code: "reo", label: k("레오바이러스") },
 ];
 
 export const SAMPLES: Opt[] = [
@@ -160,6 +163,10 @@ export function notificationText(kind: string, d: Record<string, unknown>): stri
       return tr("부검 결과가 나왔습니다 ({house})", { house: v(d.house) || v(d.farm) });
     case "case_result_updated":
       return tr("부검 결과가 수정됐습니다 ({house})", { house: v(d.house) || v(d.farm) });
+    case "lab_issued":
+      return tr("검사 결과가 나왔습니다 ({what})", { what: [v(d.house), v(d.target)].filter(Boolean).join(", ") || v(d.farm) });
+    case "lab_updated":
+      return tr("검사 결과가 수정됐습니다 ({what})", { what: [v(d.house), v(d.target)].filter(Boolean).join(", ") || v(d.farm) });
     case "case_cancelled":
       return tr("{farm} {house} 부검 건이 취소됐습니다", { farm: v(d.farm), house: v(d.house) });
     default:

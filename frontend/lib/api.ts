@@ -1,4 +1,9 @@
 import type {
+  Epidemic,
+  LabBrief,
+  LabDetail,
+  LabIn,
+  TiterSeries,
   AdminFarm,
   AdminHouse,
   AdminUser,
@@ -301,4 +306,47 @@ export const vaccinesApi = {
     request<FlockVaccination>(`/api/flocks/${flockId}/vaccinations`, json("POST", b), t),
   removeRecord: (t: string, id: number) => request<FlockVaccination>(`/api/vaccinations/${id}`, { method: "DELETE" }, t),
   due: (t: string, days = 14) => request<{ items: DueRow[]; today: string }>(`/api/vaccination/due?days=${days}`, {}, t),
+};
+
+export const labApi = {
+  list: (t: string, f: { farm_id?: number; case_id?: number; kind?: string; status?: string } = {}) => {
+    const qs = new URLSearchParams(Object.entries(f).filter(([, v]) => v !== undefined && v !== "").map(([k, v]) => [k, String(v)]));
+    return request<{ items: LabBrief[]; can_edit: boolean }>(`/api/lab?${qs}`, {}, t);
+  },
+  get: (t: string, id: number) => request<LabDetail>(`/api/lab/${id}`, {}, t),
+  create: (t: string, b: LabIn) => request<LabDetail>("/api/lab", json("POST", b), t),
+  update: (t: string, id: number, b: LabIn) => request<LabDetail>(`/api/lab/${id}`, json("PUT", b), t),
+  issue: (t: string, id: number) => request<LabDetail>(`/api/lab/${id}/issue`, { method: "POST" }, t),
+  unissue: (t: string, id: number) => request<LabDetail>(`/api/lab/${id}/unissue`, { method: "POST" }, t),
+  remove: (t: string, id: number) => request<{ ok: boolean }>(`/api/lab/${id}`, { method: "DELETE" }, t),
+  titers: (t: string, farmId: number, houseId?: number | null) =>
+    request<{ series: TiterSeries[] }>(`/api/lab/titers?farm_id=${farmId}${houseId ? `&house_id=${houseId}` : ""}`, {}, t),
+  /** 표준 입력 양식 내려받기 */
+  template: async (t: string) => {
+    const res = await fetch(`${API_URL}/api/lab/template.xlsx`, { headers: { Authorization: `Bearer ${t}`, "Accept-Language": storedLang() } });
+    if (!res.ok) throw new ApiError(res.status, tr("양식을 받지 못했습니다"));
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "lab-template.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+  importFile: async (t: string, file: File, format = "standard_xlsx") => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${API_URL}/api/lab/import?format=${format}`, {
+      method: "POST",
+      body: fd,
+      headers: { Authorization: `Bearer ${t}`, "Accept-Language": storedLang() },
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(res.status, typeof body.detail === "string" ? body.detail : tr("파일을 올리지 못했습니다"));
+    return body as { created: number[]; skipped: { farm: string | null; reason: string }[] };
+  },
+};
+
+export const epidemicApi = {
+  get: (t: string, days: number, region?: string | null) =>
+    request<Epidemic>(`/api/epidemic?days=${days}${region ? `&region=${encodeURIComponent(region)}` : ""}`, {}, t),
 };

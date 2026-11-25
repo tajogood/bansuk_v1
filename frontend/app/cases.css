@@ -754,3 +754,27 @@
   align-self: flex-start;
   color: var(--ink-3);
 }
+.cs-lab {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cs-lab li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid #edf1ee;
+}
+.cs-lab li:first-child {
+  border-top: 0;
+}
+.cs-lab .lb-res {
+  font-weight: 800;
+}
+.cs-lab .lb-res.is-positive {
+  color: #9b2c22;
+}
+.cs-lab .lb-res.is-negative {
+  color: var(--barn);
+}

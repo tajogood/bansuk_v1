@@ -6,7 +6,9 @@ import NotificationBell from "@/components/NotificationBell";
 import { k, locale, tr, useLang } from "@/lib/i18n";
 import SeriesChart, { toCsv } from "@/components/SeriesChart";
 import { analysisApi, loadSession } from "@/lib/api";
-import type { AnalysisDashboard, AnalysisQuery, Catalog, ChartKind, QueryResult, Session, Widget } from "@/lib/types";
+import { DISEASES } from "@/lib/cases";
+import { ANTIGENS } from "@/lib/lab";
+import type { AnalysisDashboard, AnalysisQuery, AnalysisSource, Catalog, ChartKind, QueryResult, Session, Widget } from "@/lib/types";
 import "../analysis.css";
 
 const BANSUK = new Set(["bansuk_vet", "bansuk_staff", "admin"]);
@@ -36,17 +38,35 @@ const DEFAULT_Q: AnalysisQuery = {
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
+/** 데이터 출처별 지표·축·묶음 */
+function specOf(c: Catalog, source: AnalysisSource) {
+  if (source !== "production" && c.events?.[source]) return c.events[source];
+  return { label: tr("생산 기록"), metrics: c.metrics, x_axes: c.x_axes, groups: c.groups };
+}
+
+const EVENT_DEFAULTS: Record<string, Partial<AnalysisQuery>> = {
+  necropsy: { metric: "cases", x: "month", group: "disease" },
+  lab: { metric: "tests", x: "month", group: "disease" },
+};
+
 function autoTitle(q: AnalysisQuery, c: Catalog | null) {
   if (!c) return "";
-  const m = c.metrics[q.metric]?.label ?? q.metric;
-  const x = c.x_axes[q.x] ?? q.x;
-  const g = c.groups[q.group] ?? q.group;
+  const sp = specOf(c, q.source);
+  const m = sp.metrics[q.metric]?.label ?? q.metric;
+  const x = sp.x_axes[q.x] ?? q.x;
+  const g = sp.groups[q.group] ?? q.group;
   return tr("{x}별 {m} ({g})", { x, m, g });
 }
 
 function describe(q: AnalysisQuery, farms: Session["farms"]): string {
   const parts: string[] = [];
   parts.push(q.farm_ids.length ? farms.filter((f) => q.farm_ids.includes(f.id)).map((f) => f.name).join(", ") : tr("전체 농장"));
+  if (q.source !== "production") {
+    if (q.disease) parts.push(tr(DISEASES.find((d) => d.code === q.disease)?.label ?? q.disease));
+    if (q.antigen) parts.push(tr(ANTIGENS.find((d) => d.code === q.antigen)?.label ?? q.antigen));
+    if (q.date_from || q.date_to) parts.push(`${q.date_from ?? tr("처음")} ~ ${q.date_to ?? tr("현재")}`);
+    return parts.join(", ");
+  }
   if (q.house_kind !== "all") parts.push(q.house_kind === "laying" ? tr("산란계사") : tr("육성사"));
   if (q.program !== "any") parts.push(q.program === "applied" ? tr("프로그램 적용 계군") : tr("미적용 계군"));
   if (q.date_from || q.date_to) parts.push(`${q.date_from ?? tr("처음")} ~ ${q.date_to ?? tr("현재")}`);
@@ -225,13 +245,15 @@ export default function AnalysisPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const spec = catalog ? specOf(catalog, q.source) : null;
   const metricOptions = useMemo(() => {
     if (!catalog) return [];
+    if (q.source !== "production") return [{ label: specOf(catalog, q.source).label, items: Object.entries(specOf(catalog, q.source).metrics) }];
     return METRIC_GROUPS.map((g) => ({
       label: g.label,
       items: Object.entries(catalog.metrics).filter(([k]) => g.match(k)),
     }));
-  }, [catalog]);
+  }, [catalog, q.source]);
 
   if (!session)
     return (
@@ -266,10 +288,20 @@ export default function AnalysisPage() {
           <h2>{editingWidget ? t("차트 고치기") : t("차트 만들기")}</h2>
           <label>
             {t("데이터")}
-            <select value={q.source} onChange={() => {}}>
+            <select
+              value={q.source}
+              onChange={(e) => {
+                const source = e.target.value as AnalysisSource;
+                setQ(
+                  source === "production"
+                    ? { ...DEFAULT_Q, farm_ids: q.farm_ids, date_from: q.date_from, date_to: q.date_to }
+                    : { ...q, ...EVENT_DEFAULTS[source], source, disease: null, antigen: null, smooth: false },
+                );
+              }}
+            >
               <option value="production">{t("생산 기록")}</option>
-              <option disabled>{t("검사 결과 (준비 중)")}</option>
-              <option disabled>{t("부검 기록 (준비 중)")}</option>
+              <option value="lab">{t("검사 결과")}</option>
+              <option value="necropsy">{t("부검 기록")}</option>
             </select>
           </label>
           <label>
@@ -290,13 +322,13 @@ export default function AnalysisPage() {
             <label>
               {t("가로축")}
               <select value={q.x} onChange={(e) => patchQ({ x: e.target.value })}>
-                {catalog && Object.entries(catalog.x_axes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                {spec && Object.entries(spec.x_axes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </label>
             <label>
               {t("묶음")}
               <select value={q.group} onChange={(e) => patchQ({ group: e.target.value })}>
-                {catalog && Object.entries(catalog.groups).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                {spec && Object.entries(spec.groups).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </label>
           </div>
@@ -317,24 +349,49 @@ export default function AnalysisPage() {
               ))}
             </div>
           </fieldset>
+          {q.source === "production" ? (
           <div className="an-row">
-            <label>
-              {t("계사")}
-              <select value={q.house_kind} onChange={(e) => patchQ({ house_kind: e.target.value as AnalysisQuery["house_kind"] })}>
-                <option value="laying">{t("산란계사")}</option>
-                <option value="rearing">{t("육성사")}</option>
-                <option value="all">{t("전체")}</option>
-              </select>
-            </label>
-            <label>
-              {t("백신프로그램")}
-              <select value={q.program} onChange={(e) => patchQ({ program: e.target.value as AnalysisQuery["program"] })}>
-                <option value="any">{t("전체 계군")}</option>
-                <option value="applied">{t("적용 계군")}</option>
-                <option value="not">{t("미적용 계군")}</option>
-              </select>
-            </label>
-          </div>
+              <label>
+                {t("계사")}
+                <select value={q.house_kind} onChange={(e) => patchQ({ house_kind: e.target.value as AnalysisQuery["house_kind"] })}>
+                  <option value="laying">{t("산란계사")}</option>
+                  <option value="rearing">{t("육성사")}</option>
+                  <option value="all">{t("전체")}</option>
+                </select>
+              </label>
+              <label>
+                {t("백신프로그램")}
+                <select value={q.program} onChange={(e) => patchQ({ program: e.target.value as AnalysisQuery["program"] })}>
+                  <option value="any">{t("전체 계군")}</option>
+                  <option value="applied">{t("적용 계군")}</option>
+                  <option value="not">{t("미적용 계군")}</option>
+                </select>
+              </label>
+            </div>
+          ) : (
+            <div className="an-row">
+              <label>
+                {t("질병")}
+                <select value={q.disease ?? ""} onChange={(e) => patchQ({ disease: e.target.value || null })}>
+                  <option value="">{t("전체")}</option>
+                  {DISEASES.map((d) => (
+                    <option key={d.code} value={d.code}>{t(d.label)}</option>
+                  ))}
+                </select>
+              </label>
+              {q.source === "lab" && (
+                <label>
+                  {t("항원 (혈청)")}
+                  <select value={q.antigen ?? ""} onChange={(e) => patchQ({ antigen: e.target.value || null })}>
+                    <option value="">{t("전체")}</option>
+                    {ANTIGENS.map((a) => (
+                      <option key={a.code} value={a.code}>{t(a.label)}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
+          )}
           <div className="an-row">
             <label>
               {t("기간 시작")}
@@ -355,10 +412,10 @@ export default function AnalysisPage() {
               <input inputMode="numeric" value={q.age_to ?? ""} onChange={(e) => patchQ({ age_to: Number(e.target.value.replace(/\D/g, "")) || null })} />
             </label>
           </div>
-          <label className="an-check">
+          {q.source === "production" && <label className="an-check">
             <input type="checkbox" checked={q.smooth} onChange={(e) => patchQ({ smooth: e.target.checked })} disabled={!["date", "age_days"].includes(q.x)} />
             {t("7일 이동평균 (날짜·일령 축)")}
-          </label>
+          </label>}
           <div className="an-seg" role="radiogroup" aria-label={t("차트 형태")}>
             {(["line", "bar", "table"] as ChartKind[]).map((k) => (
               <button key={k} type="button" aria-pressed={chart === k} onClick={() => setChart(k)}>

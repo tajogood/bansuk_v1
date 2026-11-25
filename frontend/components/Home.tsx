@@ -95,6 +95,12 @@ export default function Home(p: Props) {
           <a className="report-link" href={`/flocks/?farm=${p.farmId}`}>
             {t("계군 관리 (입추·이동·출하)")}
           </a>
+          <a className="report-link" href="/lab/">
+            {t("질병 검사 결과·항체가")}
+          </a>
+          <a className="report-link" href="/epidemic/">
+            {t("최근 유행 질병")}
+          </a>
           {p.isBansuk && (
             <>
               <a className="report-link" href={`/report/?farm=${p.farmId}`}>

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CasePhotos from "./CasePhotos";
-import { casesApi } from "@/lib/api";
+import { casesApi, labApi } from "@/lib/api";
 import { DISEASES, LESIONS, ONSET, ORGANS, SAMPLES, STATUS_LABEL, SYMPTOMS, fmtDateTime, label, type Opt } from "@/lib/cases";
 import { tr, useT } from "@/lib/i18n";
-import type { CaseEventItem, CaseResult, Finding, NecropsyCase } from "@/lib/types";
+import { antigenName, kindName } from "@/lib/lab";
+import type { CaseEventItem, CaseResult, Finding, LabBrief, NecropsyCase } from "@/lib/types";
 
 const TIMES = Array.from({ length: 19 }, (_, i) => {
   const m = 8 * 60 + i * 30;
@@ -315,6 +316,46 @@ function ResultForm({ c, token, onSaved, onCancel }: { c: NecropsyCase; token: s
   );
 }
 
+/** 이 부검 건에서 의뢰한 검사 결과 */
+function CaseLab({ c, token, bansuk }: { c: NecropsyCase; token: string; bansuk: boolean }) {
+  const t = useT();
+  const [items, setItems] = useState<LabBrief[] | null>(null);
+  useEffect(() => {
+    labApi.list(token, { case_id: c.id }).then((r) => setItems(r.items)).catch(() => setItems([]));
+  }, [token, c.id]);
+  if (!bansuk && (!items || items.length === 0)) return null;
+  return (
+    <section className="cs-sec">
+      <div className="cs-sec-head">
+        <h2>{t("검사 결과")}</h2>
+        {bansuk && c.status !== "cancelled" && (
+          <a className="link-btn" href={`/lab/?new=1&case=${c.id}&farm=${c.farm?.id ?? ""}`}>
+            + {t("결과 입력")}
+          </a>
+        )}
+      </div>
+      {items === null ? (
+        <p className="cs-muted">{t("불러오는 중")}</p>
+      ) : items.length === 0 ? (
+        <p className="cs-muted">{t("아직 입력한 검사 결과가 없습니다.")}</p>
+      ) : (
+        <ul className="cs-lab">
+          {items.map((r) => (
+            <li key={r.id}>
+              <a href={`/lab/?id=${r.id}`}>
+                {r.kind === "serology" ? r.antigens.map(antigenName).join(", ") : r.target || kindName(r.kind)}
+              </a>
+              <span className={r.status === "draft" ? "cs-muted" : r.positive ? "lb-res is-positive" : "lb-res is-negative"}>
+                {r.status === "draft" ? t("작성 중") : r.positive === null ? "" : r.positive ? t("양성") : t("음성")}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export default function CaseDetail({ c, token, bansuk, onChange }: { c: NecropsyCase; token: string; bansuk: boolean; onChange: (c: NecropsyCase) => void }) {
   const t = useT();
   const [slots, setSlots] = useState([{ d: localISODate(1), t: "10:00" }]);
@@ -538,6 +579,7 @@ export default function CaseDetail({ c, token, bansuk, onChange }: { c: Necropsy
         </div>
 
         <aside className="cs-col-side">
+          <CaseLab c={c} token={token} bansuk={bansuk} />
           <Production c={c} />
           <section className="cs-sec">
             <h2>{t("진행 기록과 대화")}</h2>

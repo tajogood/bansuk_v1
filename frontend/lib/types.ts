@@ -191,8 +191,11 @@ export type AdminFarm = {
 export type AuditItem = { at: string | null; actor: string | null; action: string; target: string };
 
 // ---------- 반석 데이터 분석기 ----------
+export type AnalysisSource = "production" | "necropsy" | "lab";
 export type AnalysisQuery = {
-  source: "production";
+  source: AnalysisSource;
+  disease?: string | null;
+  antigen?: string | null;
   metric: string;
   x: string;
   group: string;
@@ -213,6 +216,7 @@ export type Catalog = {
   metrics: Record<string, { label: string; unit: string }>;
   x_axes: Record<string, string>;
   groups: Record<string, string>;
+  events?: Record<string, { label: string; metrics: Record<string, { label: string; unit: string }>; groups: Record<string, string>; x_axes: Record<string, string> }>;
 };
 
 export type Series = { key: string; label: string; points: [string | number, number][] };
@@ -396,3 +400,86 @@ export type FlockVaccination = {
   can_edit: boolean;
 };
 export type DueRow = ScheduleRow & { flock_id: number; farm: { id: number; name: string }; house: string | null; placed_on: string };
+
+// ---------- 질병 검사 결과 ----------
+export type LabKind = "pcr" | "serology" | "culture" | "other";
+export type LabResultValue = "positive" | "negative" | "suspect" | "na";
+export type LabSampleRow = { id?: number; sample: string; result: LabResultValue; value?: string | null; control: boolean };
+export type SeroRow = { id?: number; antigen: string; group_label: string | null; counts: number[]; n?: number; mean?: number | null };
+export type LabBrief = {
+  id: number;
+  report_no: string | null;
+  kind: LabKind;
+  status: "draft" | "issued";
+  farm_id: number;
+  farm: string;
+  house_id: number | null;
+  house: string;
+  flock_id: number | null;
+  case_id: number | null;
+  sampled_on: string | null;
+  issued_on: string | null;
+  age_days: number | null;
+  method: string | null;
+  target: string | null;
+  disease: string | null;
+  antigens: string[];
+  positive: boolean | null;
+};
+export type LabDetail = LabBrief & {
+  requester: string | null;
+  requested_on: string | null;
+  opinion: string | null;
+  source: string;
+  can_edit: boolean;
+  samples: LabSampleRow[];
+  sero: SeroRow[];
+  case: { id: number; status: string; final_diagnosis: string | null; suspected: string[] } | null;
+};
+export type LabIn = {
+  kind: LabKind;
+  farm_id: number;
+  house_id: number | null;
+  case_id: number | null;
+  report_no: string | null;
+  requester: string | null;
+  requested_on: string | null;
+  sampled_on: string | null;
+  age_days: number | null;
+  method: string | null;
+  target: string | null;
+  disease: string | null;
+  opinion: string | null;
+  samples: LabSampleRow[];
+  sero: SeroRow[];
+};
+export type TiterPoint = { submission_id: number; sampled_on: string | null; age_days: number | null; group_label: string | null; mean: number | null; n: number; counts: number[] };
+export type TiterSeries = { antigen: string; points: TiterPoint[] };
+
+// ---------- 최근 유행 질병 ----------
+export type EpidemicDisease = {
+  disease: string;
+  count: number;
+  confirmed: number;
+  farms: number;
+  recent: number;
+  previous: number;
+  regions: { region: string; count: number }[];
+  weekly: number[];
+  last: string | null;
+};
+export type Epidemic = {
+  from: string;
+  to: string;
+  days: number;
+  region: string | null;
+  weeks: string[];
+  total: number;
+  farms: number;
+  confirmed: number;
+  diseases: EpidemicDisease[];
+  regions: { region: string; count: number; top: { disease: string; count: number }[] }[];
+  recent: { date: string; disease: string; region: string; source: "necropsy" | "lab" | "both"; confirmed: boolean; farm?: string; farm_id?: number; case_id?: number | null; lab_id?: number | null }[];
+  all_regions: string[];
+  show_farms: boolean;
+};
