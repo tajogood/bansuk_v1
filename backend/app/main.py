@@ -1,8 +1,10 @@
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .bootstrap import ensure_admin
 from .crypto import check_key
@@ -41,3 +43,10 @@ app.include_router(daily.router)
 app.include_router(reports.router)
 app.include_router(analysis.router)
 app.include_router(admin.router)
+
+
+# 운영: 빌드한 화면(frontend/out)을 같은 서버에서 내보낸다 (포트 하나, CORS 불필요).
+# API 경로가 먼저 등록되어 있으므로 /api/* 는 영향받지 않는다.
+_front = Path(os.environ.get("FRONTEND_DIR", Path(__file__).resolve().parents[2] / "frontend" / "out"))
+if _front.is_dir():
+    app.mount("/", StaticFiles(directory=_front, html=True), name="frontend")
