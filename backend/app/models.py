@@ -156,6 +156,19 @@ class IssuedReport(Base):
     issued_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class AnalysisDashboard(Base):
+    """반석 분석기에서 만든 편집 가능한 대시보드. 위젯마다 쿼리와 차트 설정을 저장하고, 열 때 다시 계산한다."""
+
+    __tablename__ = "analysis_dashboard"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("app_user.id"), index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    shared: Mapped[bool] = mapped_column(Boolean, default=False)  # 반석 팀 전체에 공유
+    widgets: Mapped[list] = mapped_column(JSON, default=list)
+    updated_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
 class DailyRecord(Base):
     """계사별 하루 생산 기록. 원자료만 저장한다."""
 

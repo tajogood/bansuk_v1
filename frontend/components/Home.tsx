@@ -78,9 +78,14 @@ export default function Home(p: Props) {
         <>
           <Dashboard token={p.token} farmId={p.farmId} date={p.date} />
           {p.isBansuk && (
-            <a className="report-link" href={`/report/?farm=${p.farmId}`}>
-              계군 성적 보고서 만들기
-            </a>
+            <>
+              <a className="report-link" href={`/report/?farm=${p.farmId}`}>
+                계군 성적 보고서 만들기
+              </a>
+              <a className="report-link" href="/analysis/">
+                데이터 분석기 열기
+              </a>
+            </>
           )}
         </>
       ) : (

@@ -1,4 +1,16 @@
-import type { Dashboard, DayView, FlockItem, FlockReport, HouseView, Session } from "./types";
+import type {
+  AnalysisDashboard,
+  AnalysisQuery,
+  Catalog,
+  Dashboard,
+  DayView,
+  FlockItem,
+  FlockReport,
+  HouseView,
+  QueryResult,
+  Session,
+  Widget,
+} from "./types";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const SESSION_KEY = "bansuk.session";
@@ -61,6 +73,20 @@ export async function downloadCsv(token: string, flockId: number, filename: stri
   a.click();
   URL.revokeObjectURL(url);
 }
+
+type DashIn = { name: string; shared: boolean; widgets: Widget[] };
+
+export const analysisApi = {
+  catalog: (t: string) => request<Catalog>("/api/analysis/catalog", {}, t),
+  query: (t: string, q: AnalysisQuery) =>
+    request<QueryResult>("/api/analysis/query", { method: "POST", body: JSON.stringify(q) }, t),
+  list: (t: string) => request<{ dashboards: AnalysisDashboard[] }>("/api/analysis/dashboards", {}, t),
+  create: (t: string, d: DashIn) =>
+    request<AnalysisDashboard>("/api/analysis/dashboards", { method: "POST", body: JSON.stringify(d) }, t),
+  update: (t: string, id: number, d: DashIn) =>
+    request<AnalysisDashboard>(`/api/analysis/dashboards/${id}`, { method: "PUT", body: JSON.stringify(d) }, t),
+  remove: (t: string, id: number) => request<{ ok: boolean }>(`/api/analysis/dashboards/${id}`, { method: "DELETE" }, t),
+};
 
 export const api = {
   flocks: (token: string, farmId: number) =>

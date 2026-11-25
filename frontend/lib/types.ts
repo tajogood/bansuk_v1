@@ -133,3 +133,60 @@ export type Session = {
   user: { id: number; name: string; role: string };
   farms: Farm[];
 };
+
+// ---------- 반석 데이터 분석기 ----------
+export type AnalysisQuery = {
+  source: "production";
+  metric: string;
+  x: string;
+  group: string;
+  farm_ids: number[];
+  flock_ids?: number[];
+  house_ids?: number[];
+  date_from?: string | null;
+  date_to?: string | null;
+  age_from?: number | null;
+  age_to?: number | null;
+  program: "any" | "applied" | "not";
+  house_kind: "laying" | "rearing" | "all";
+  smooth: boolean;
+};
+
+export type Catalog = {
+  sources: Record<string, string>;
+  metrics: Record<string, { label: string; unit: string }>;
+  x_axes: Record<string, string>;
+  groups: Record<string, string>;
+};
+
+export type Series = { key: string; label: string; points: [string | number, number][] };
+
+export type QueryResult = {
+  metric: { code: string; label: string; unit: string; note?: string | null };
+  x: { code: string; label: string };
+  group: { code: string; label: string };
+  series: Series[];
+  truncated: boolean;
+  record_count: number;
+};
+
+export type ChartKind = "line" | "bar" | "table";
+
+export type Widget = {
+  id: string;
+  title: string;
+  chart: ChartKind;
+  width: 1 | 2;
+  query: AnalysisQuery;
+  note?: string | null;
+};
+
+export type AnalysisDashboard = {
+  id: number;
+  name: string;
+  shared: boolean;
+  widgets: Widget[];
+  owner: string | null;
+  mine: boolean;
+  updated_at: string | null;
+};
