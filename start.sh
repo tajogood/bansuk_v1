@@ -174,7 +174,7 @@ if [[ ! -d "$FRONT/out" || "$(cat "$BUILT_FILE" 2>/dev/null)" != "$FRONT_REV" ||
     npm ci --silent --no-audit --no-fund
     rm -rf .next out
     # 화면과 API를 같은 서버에서 내보내므로 API 주소는 비워 둔다 (같은 주소)
-    NEXT_PUBLIC_API_URL="" NEXT_TELEMETRY_DISABLED=1 npx next build >"$DATA/frontend-build.log" 2>&1 \
+    NEXT_PUBLIC_API_URL="" NEXT_TELEMETRY_DISABLED=1 npm run build >"$DATA/frontend-build.log" 2>&1 \
       || { tail -30 "$DATA/frontend-build.log"; exit 1; }
   ) || die "화면 빌드에 실패했습니다 (기록: backend/data/frontend-build.log)"
   echo "$FRONT_REV" >"$BUILT_FILE"

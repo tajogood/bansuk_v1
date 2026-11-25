@@ -5,6 +5,9 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from .i18n import I18nJSONResponse, http_exception_handler, lang_middleware
 
 from .bootstrap import ensure_admin
 from .crypto import check_key
@@ -22,7 +25,14 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="반석 가금 생산·방역 관리 API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="반석 가금 생산·방역 관리 API",
+    version="0.1.0",
+    lifespan=lifespan,
+    default_response_class=I18nJSONResponse,
+)
+app.middleware("http")(lang_middleware)
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 
 _origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(

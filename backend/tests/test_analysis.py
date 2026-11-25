@@ -58,3 +58,12 @@ def test_dashboard_crud_and_sharing(client):
     lst = client.get("/api/analysis/dashboards", headers=vet).json()["dashboards"]
     assert any(x["id"] == d["id"] for x in lst)
     assert client.delete(f"/api/analysis/dashboards/{d['id']}", headers=vet).json()["ok"]
+
+
+def test_catalog_and_series_in_english(client):
+    h = {**auth(client, "01011111111"), "Accept-Language": "en"}
+    cat = client.get("/api/analysis/catalog", headers=h).json()
+    assert cat["metrics"]["lay_rate"]["label"] == "Lay rate"
+    assert cat["metrics"]["share_xl"]["label"] == "Extra large share"
+    r = client.post("/api/analysis/query", headers=h, json={"metric": "lay_rate", "x": "age_weeks", "group": "program"}).json()
+    assert {s["label"] for s in r["series"]} <= {"Program applied", "Not applied"}

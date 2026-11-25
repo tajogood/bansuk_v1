@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLang, useT } from "@/lib/i18n";
 import { api } from "@/lib/api";
 import { num } from "@/lib/format";
 import type { Dashboard as DashboardData } from "@/lib/types";
@@ -11,6 +12,8 @@ import type { Dashboard as DashboardData } from "@/lib/types";
  * 모든 농장이 같은 화면을 쓴다 (엑셀 양식 차이는 이관 단계에서 흡수).
  */
 export default function Dashboard({ token, farmId, date }: { token: string; farmId: number; date: string }) {
+  const t = useT();
+  const lang = useLang();
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,10 +24,10 @@ export default function Dashboard({ token, farmId, date }: { token: string; farm
       .dashboard(token, farmId, date)
       .then(setData)
       .catch((e) => setError(e.message));
-  }, [token, farmId, date]);
+  }, [token, farmId, date, lang]);
 
   if (error) return <p className="warn warn-error">{error}</p>;
-  if (!data) return <p className="muted center">불러오는 중</p>;
+  if (!data) return <p className="muted center">{t("불러오는 중")}</p>;
 
   return (
     <div className="dash">
@@ -38,28 +41,28 @@ export default function Dashboard({ token, farmId, date }: { token: string; farm
           <section key={h.house.id} className="dash-card">
             <header>
               <h2>{h.house.name}</h2>
-              <span className="dash-age">{h.flock ? `${h.flock.age_weeks}주령` : "계군 없음"}</span>
-              {h.flock?.program && <span className="dash-tag">반석 프로그램</span>}
+              <span className="dash-age">{h.flock ? t("{n}주령", { n: h.flock.age_weeks }) : t("계군 없음")}</span>
+              {h.flock?.program && <span className="dash-tag">{t("반석 프로그램")}</span>}
             </header>
 
             {!rearing && p ? (
               <div className="dash-main">
                 <div className="dash-big">
                   <strong>{p.lay_7d.toFixed(1)}%</strong>
-                  <span>최근 7일 산란율</span>
+                  <span>{t("최근 7일 산란율")}</span>
                 </div>
                 <p className="dash-compare">
                   {p.past_median !== null ? (
                     <>
-                      우리 농장 과거 계군의 같은 일령 중앙값 <b>{p.past_median.toFixed(1)}%</b>
+                      {t("우리 농장 과거 계군의 같은 일령 중앙값")} <b>{p.past_median.toFixed(1)}%</b>
                       <br />
-                      {p.past_n}개 계군 중{" "}
+                      {t("{n}개 계군 중", { n: p.past_n })}{" "}
                       <b className={p.better_than_pct! >= 50 ? "is-good" : "is-low"}>
-                        {p.better_than_pct! >= 50 ? `상위 ${100 - p.better_than_pct!}%` : `하위 ${p.better_than_pct}%`}
+                        {p.better_than_pct! >= 50 ? t("상위 {n}%", { n: 100 - p.better_than_pct! }) : t("하위 {n}%", { n: p.better_than_pct! })}
                       </b>
                     </>
                   ) : (
-                    "같은 일령의 과거 계군 기록이 아직 부족합니다."
+                    t("같은 일령의 과거 계군 기록이 아직 부족합니다.")
                   )}
                 </p>
               </div>
@@ -69,15 +72,15 @@ export default function Dashboard({ token, farmId, date }: { token: string; farm
 
             <dl className="dash-stats">
               <div>
-                <dt>현재 수수</dt>
+                <dt>{t("현재 수수")}</dt>
                 <dd>{latest?.bird_count ? num(latest.bird_count) : "–"}</dd>
               </div>
               <div>
-                <dt>폐사 (7일)</dt>
-                <dd>{num(mort7)}수</dd>
+                <dt>{t("폐사 (7일)")}</dt>
+                <dd>{t("{n}수", { n: num(mort7) })}</dd>
               </div>
               <div>
-                <dt>수당 사료</dt>
+                <dt>{t("수당 사료")}</dt>
                 <dd>{latest?.feed_per_bird_g ? `${latest.feed_per_bird_g}g` : "–"}</dd>
               </div>
             </dl>
@@ -89,6 +92,7 @@ export default function Dashboard({ token, farmId, date }: { token: string; farm
 }
 
 function Spark({ values }: { values: (number | null)[] }) {
+  const t = useT();
   const W = 320, H = 64, P = 4;
   const vs = values.map((v) => (v !== null && v <= 105 ? v : null));
   const nums = vs.filter((v): v is number => v !== null);
@@ -106,12 +110,12 @@ function Spark({ values }: { values: (number | null)[] }) {
   const lastI = vs.length - 1 - [...vs].reverse().findIndex((v) => v !== null);
   return (
     <figure className="dash-spark">
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`최근 ${vs.length}일 산란율 추이`}>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t("최근 {n}일 산란율 추이", { n: vs.length })}>
         <path d={d} fill="none" stroke="#1F5F45" strokeWidth={2} />
         <circle cx={X(lastI)} cy={Y(vs[lastI]!)} r={3.5} fill="#1F5F45" />
       </svg>
       <figcaption>
-        최근 {vs.length}일 산란율 (낮음 {Math.min(...nums).toFixed(1)}% · 높음 {Math.max(...nums).toFixed(1)}%)
+        {t("최근 {n}일 산란율 (낮음 {lo}% · 높음 {hi}%)", { n: vs.length, lo: Math.min(...nums).toFixed(1), hi: Math.max(...nums).toFixed(1) })}
       </figcaption>
     </figure>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 import Keypad from "./Keypad";
 import { buildFields, display, toApi, type Field } from "@/lib/fields";
 import { num } from "@/lib/format";
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export default function HouseEntry({ view, config, position, saving, onBack, onSave }: Props) {
+  const t = useT();
   const fields = useMemo(() => buildFields(config, view.house.kind), [config, view.house.kind]);
   const initial = useMemo(() => {
     const v: Record<string, string> = {};
@@ -114,7 +116,7 @@ export default function HouseEntry({ view, config, position, saving, onBack, onS
   const prevRate = view.previous?.metrics.lay_rate ?? null;
   const liveWarnings: Warning[] = [];
   if (live.rate !== null && live.rate > 100)
-    liveWarnings.push({ level: "error", code: "lay_over_100", message: "산란율이 100%를 넘습니다. 판 수를 확인해 주세요." });
+    liveWarnings.push({ level: "error", code: "lay_over_100", message: t("산란율이 100%를 넘습니다. 판 수를 확인해 주세요.") });
 
   const filledRequired = fields.filter((f) => !f.optional && values[f.key] !== "").length;
   const totalRequired = fields.filter((f) => !f.optional).length;
@@ -122,14 +124,14 @@ export default function HouseEntry({ view, config, position, saving, onBack, onS
   return (
     <div className="entry">
       <header className="entry-head">
-        <button type="button" className="back" onClick={onBack} aria-label="동 목록으로">
+        <button type="button" className="back" onClick={onBack} aria-label={t("동 목록으로")}>
           ‹
         </button>
         <div className="entry-title">
           <h1>{view.house.name}</h1>
           <p>
-            {view.flock ? `${view.flock.age_weeks}주령 (${view.flock.age_days}일령)` : "계군 정보 없음"}
-            {view.expected_start_count !== null && <span className="sep">{num(view.expected_start_count)}수</span>}
+            {view.flock ? t("{w}주령 ({d}일령)", { w: view.flock.age_weeks, d: view.flock.age_days }) : t("계군 정보 없음")}
+            {view.expected_start_count !== null && <span className="sep">{t("{n}수", { n: num(view.expected_start_count) })}</span>}
           </p>
         </div>
         <span className="entry-pos">
@@ -144,7 +146,7 @@ export default function HouseEntry({ view, config, position, saving, onBack, onS
           const first = f.optional && !fields[i - 1]?.optional;
           return (
             <li key={f.key}>
-              {first && <div className="optional-head">선택 항목 (비워 두어도 됩니다)</div>}
+              {first && <div className="optional-head">{t("선택 항목 (비워 두어도 됩니다)")}</div>}
               <button
                 type="button"
                 ref={(el) => {
@@ -154,7 +156,7 @@ export default function HouseEntry({ view, config, position, saving, onBack, onS
                 onClick={() => go(i)}
               >
                 <span className="field-label">{f.label}</span>
-                <span className="field-prev">{p !== "" ? `어제 ${num(Number(p), 1)}` : ""}</span>
+                <span className="field-prev">{p !== "" ? t("어제 {v}", { v: num(Number(p), 1) }) : ""}</span>
                 <span className="field-value">
                   {v !== "" ? num(Number(v), 1) : <span className="placeholder">{p !== "" ? num(Number(p), 1) : "0"}</span>}
                   {i === active && !fresh && <span className="caret" aria-hidden />}
@@ -170,13 +172,13 @@ export default function HouseEntry({ view, config, position, saving, onBack, onS
               className="memo"
               value={memo}
               autoFocus
-              placeholder="특이사항 (예: 2층 급수기 고장, 오후 정전)"
+              placeholder={t("특이사항 (예: 2층 급수기 고장, 오후 정전)")}
               onChange={(e) => setMemo(e.target.value)}
               onBlur={() => setMemoOpen(memo !== "")}
             />
           ) : (
             <button type="button" className="memo-open" onClick={() => setMemoOpen(true)}>
-              {memo ? `메모: ${memo}` : "메모 남기기"}
+              {memo ? t("메모: {memo}", { memo }) : t("메모 남기기")}
             </button>
           )}
         </li>
@@ -186,25 +188,25 @@ export default function HouseEntry({ view, config, position, saving, onBack, onS
         {live.hasEggs ? (
           <>
             <div>
-              <span className="summary-label">총 산란</span>
-              <strong>{live.eggs !== null ? `${num(live.eggs)}개` : "–"}</strong>
+              <span className="summary-label">{t("총 산란")}</span>
+              <strong>{live.eggs !== null ? t("{n}개", { n: num(live.eggs) }) : "–"}</strong>
             </div>
             <div>
-              <span className="summary-label">산란율</span>
+              <span className="summary-label">{t("산란율")}</span>
               <strong className={live.rate !== null && live.rate > 100 ? "is-bad" : ""}>
-                {live.rate !== null ? `${live.rate.toFixed(1)}%` : live.eggs !== null ? "입력 중" : "–"}
+                {live.rate !== null ? `${live.rate.toFixed(1)}%` : live.eggs !== null ? t("입력 중") : "–"}
               </strong>
-              {prevRate !== null && <span className="summary-prev">어제 {prevRate.toFixed(1)}%</span>}
+              {prevRate !== null && <span className="summary-prev">{t("어제 {v}", { v: `${prevRate.toFixed(1)}%` })}</span>}
             </div>
           </>
         ) : (
           <>
             <div>
-              <span className="summary-label">현재 수수</span>
+              <span className="summary-label">{t("현재 수수")}</span>
               <strong>{live.birds !== null ? `${num(live.birds)}` : "–"}</strong>
             </div>
             <div>
-              <span className="summary-label">수당 사료</span>
+              <span className="summary-label">{t("수당 사료")}</span>
               <strong>{live.feedPerBird !== null ? `${live.feedPerBird.toFixed(1)}g` : "–"}</strong>
             </div>
           </>
@@ -216,15 +218,15 @@ export default function HouseEntry({ view, config, position, saving, onBack, onS
           disabled={saving}
         >
           <span className="summary-label">
-            필수 {filledRequired}/{totalRequired}
+            {t("필수 {a}/{b}", { a: filledRequired, b: totalRequired })}
           </span>
-          <strong>{saving ? "저장 중" : "저장"}</strong>
+          <strong>{saving ? t("저장 중") : t("저장")}</strong>
         </button>
       </section>
       {confirmMissing && (
-        <div className="confirm" role="alertdialog" aria-label="빈 칸 확인">
+        <div className="confirm" role="alertdialog" aria-label={t("빈 칸 확인")}>
           <p>
-            <strong>{confirmMissing.join(", ")}</strong> 칸이 비어 있습니다. 비운 채로 저장할까요?
+            {t("{fields} 칸이 비어 있습니다. 비운 채로 저장할까요?", { fields: confirmMissing.join(", ") })}
           </p>
           <div className="confirm-actions">
             <button
@@ -236,10 +238,10 @@ export default function HouseEntry({ view, config, position, saving, onBack, onS
                 go(i);
               }}
             >
-              채우러 가기
+              {t("채우러 가기")}
             </button>
             <button type="button" className="btn-primary" onClick={doSave}>
-              비운 채로 저장
+              {t("비운 채로 저장")}
             </button>
           </div>
         </div>

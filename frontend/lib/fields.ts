@@ -2,6 +2,7 @@
  * 입력 항목 정의. 농장 설정(InputConfig)에 따라 화면에 나올 항목과 순서를 만든다.
  * 필수 항목(폐사, 규격별 산란, 사료)이 먼저, 선택 항목이 뒤에 온다.
  */
+import { tr } from "./i18n";
 import type { DailyRecord, InputConfig } from "./types";
 
 export type Field = {
@@ -18,14 +19,14 @@ export function buildFields(cfg: InputConfig, houseKind: string = "laying"): Fie
   const tray = cfg.egg_unit === "tray";
   const rearing = houseKind === "rearing";
   const f: Field[] = [
-    { key: "mortality", label: "폐사", unit: "수", decimal: false, scale: 1, optional: false, isEgg: false },
+    { key: "mortality", label: tr("폐사"), unit: tr("수"), decimal: false, scale: 1, optional: false, isEgg: false },
   ];
   // 육성사는 산란 전이라 규격 칸이 없다
   for (const g of rearing ? [] : cfg.grades) {
     f.push({
       key: `egg_${g.code}`,
       label: g.label,
-      unit: tray ? "판" : "개",
+      unit: tray ? tr("판") : tr("개"),
       decimal: false,
       scale: tray ? cfg.eggs_per_tray : 1,
       optional: false,
@@ -33,21 +34,21 @@ export function buildFields(cfg: InputConfig, houseKind: string = "laying"): Fie
     });
   }
   if (cfg.show_feed)
-    f.push({ key: "feed_kg", label: "사료 소비", unit: "kg", decimal: true, scale: 1, optional: false, isEgg: false });
+    f.push({ key: "feed_kg", label: tr("사료 소비"), unit: "kg", decimal: true, scale: 1, optional: false, isEgg: false });
   if (cfg.show_water)
-    f.push({ key: "water_l", label: "급수", unit: "L", decimal: true, scale: 1, optional: true, isEgg: false });
+    f.push({ key: "water_l", label: tr("급수"), unit: "L", decimal: true, scale: 1, optional: true, isEgg: false });
   if (cfg.show_temp) {
-    f.push({ key: "temp_min", label: "최저 온도", unit: "℃", decimal: true, scale: 1, optional: true, isEgg: false });
-    f.push({ key: "temp_max", label: "최고 온도", unit: "℃", decimal: true, scale: 1, optional: true, isEgg: false });
+    f.push({ key: "temp_min", label: tr("최저 온도"), unit: "℃", decimal: true, scale: 1, optional: true, isEgg: false });
+    f.push({ key: "temp_max", label: tr("최고 온도"), unit: "℃", decimal: true, scale: 1, optional: true, isEgg: false });
   }
   if (cfg.show_humidity)
-    f.push({ key: "humidity", label: "습도", unit: "%", decimal: true, scale: 1, optional: true, isEgg: false });
+    f.push({ key: "humidity", label: tr("습도"), unit: "%", decimal: true, scale: 1, optional: true, isEgg: false });
   if (cfg.show_egg_weight && !rearing)
-    f.push({ key: "egg_weight", label: "난중", unit: "g", decimal: true, scale: 1, optional: true, isEgg: false });
+    f.push({ key: "egg_weight", label: tr("난중"), unit: "g", decimal: true, scale: 1, optional: true, isEgg: false });
   if (rearing)
-    f.push({ key: "body_weight", label: "체중", unit: "g", decimal: true, scale: 1, optional: true, isEgg: false });
+    f.push({ key: "body_weight", label: tr("체중"), unit: "g", decimal: true, scale: 1, optional: true, isEgg: false });
   if (cfg.show_cull)
-    f.push({ key: "cull", label: "도태", unit: "수", decimal: false, scale: 1, optional: true, isEgg: false });
+    f.push({ key: "cull", label: tr("도태"), unit: tr("수"), decimal: false, scale: 1, optional: true, isEgg: false });
   return f;
 }
 

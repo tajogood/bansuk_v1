@@ -5,6 +5,7 @@ import Home from "@/components/Home";
 import HouseEntry from "@/components/HouseEntry";
 import Login from "@/components/Login";
 import SetPin from "@/components/SetPin";
+import { useLang, useT } from "@/lib/i18n";
 import { api, ApiError, loadSession, saveSession } from "@/lib/api";
 import { todayISO } from "@/lib/format";
 import { enqueue, flush, isNetworkError, pending } from "@/lib/queue";
@@ -13,6 +14,8 @@ import type { DayView, HouseView, Session, Warning } from "@/lib/types";
 type Sheet = { houseName: string; warnings: Warning[]; nextId: number | null };
 
 export default function Page() {
+  const t = useT();
+  const lang = useLang();
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [farmId, setFarmId] = useState<number | null>(null);
@@ -74,11 +77,11 @@ export default function Page() {
         setSession({ ...session, user: { ...session.user, must_change_pin: true } });
         return;
       }
-      setError(isNetworkError(e) ? "연결이 안 됩니다. 전파가 닿는 곳에서 다시 불러와 주세요." : (e as Error).message);
+      setError(isNetworkError(e) ? t("연결이 안 됩니다. 전파가 닿는 곳에서 다시 불러와 주세요.") : (e as Error).message);
     } finally {
       setLoading(false);
     }
-  }, [session, farmId, date]);
+  }, [session, farmId, date, lang]);
 
   useEffect(() => {
     load();
@@ -91,7 +94,7 @@ export default function Page() {
     const run = async () => {
       if (pending().length === 0) return;
       const { left, rejected } = await flush(session.token);
-      if (rejected.length) showToast(`${rejected[0].item.houseName} 저장이 거부됐습니다: ${rejected[0].message}`);
+      if (rejected.length) showToast(t("{house} 저장이 거부됐습니다: {msg}", { house: rejected[0].item.houseName, msg: rejected[0].message }));
       refreshQueued();
       if (left === 0) load();
     };
@@ -148,7 +151,7 @@ export default function Page() {
       if (updated.warnings.length) {
         setSheet({ houseName: hv.house.name, warnings: updated.warnings, nextId });
       } else {
-        showToast(`${hv.house.name} 저장했습니다`);
+        showToast(t("{house} 저장했습니다", { house: hv.house.name }));
         proceed(nextId);
       }
     } catch (e) {
@@ -157,7 +160,7 @@ export default function Page() {
         const q = new Set(queued).add(houseId);
         setQueued(q);
         setPendingCount(pending().length);
-        showToast(`${hv.house.name} 입력을 휴대폰에 보관했습니다. 연결되면 보냅니다.`);
+        showToast(t("{house} 입력을 휴대폰에 보관했습니다. 연결되면 보냅니다.", { house: hv.house.name }));
         proceed(nextTodo(houseId, day, q));
       } else {
         showToast((e as Error).message);
@@ -189,7 +192,7 @@ export default function Page() {
           setSession(s);
           setTempPin(null);
           setFarmId(s.farms[0]?.id ?? null);
-          showToast("비밀번호를 정했습니다");
+          showToast(t("비밀번호를 정했습니다"));
         }}
         onCancel={() => signOut(session)}
       />
@@ -236,7 +239,7 @@ export default function Page() {
       {sheet && (
         <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
           <div className="sheet">
-            <h2 id="sheet-title">{sheet.houseName} 저장했습니다. 확인할 것이 있습니다.</h2>
+            <h2 id="sheet-title">{t("{house} 저장했습니다. 확인할 것이 있습니다.", { house: sheet.houseName })}</h2>
             <ul>
               {sheet.warnings.map((w) => (
                 <li key={w.code} className={`warn warn-${w.level}`}>
@@ -244,13 +247,13 @@ export default function Page() {
                 </li>
               ))}
             </ul>
-            <p className="muted">반석에도 같은 내용이 전달됩니다.</p>
+            <p className="muted">{t("반석에도 같은 내용이 전달됩니다.")}</p>
             <div className="sheet-actions">
               <button type="button" className="btn-ghost" onClick={() => setSheet(null)}>
-                다시 고치기
+                {t("다시 고치기")}
               </button>
               <button type="button" className="btn-primary" onClick={() => proceed(sheet.nextId)}>
-                {sheet.nextId !== null ? "확인, 다음 동" : "확인"}
+                {sheet.nextId !== null ? t("확인, 다음 동") : t("확인")}
               </button>
             </div>
           </div>

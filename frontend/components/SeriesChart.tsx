@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { locale, useT } from "@/lib/i18n";
 import type { ChartKind, QueryResult } from "@/lib/types";
 
 // 계열 색: 8개까지 구분색, 그 이상은 회색으로 두고 범례에서 골라 강조한다.
@@ -9,7 +10,7 @@ const GREY = "#B7C0BA";
 
 function fmt(v: number, unit: string) {
   const d = Math.abs(v) >= 100 ? 0 : Math.abs(v) >= 10 ? 1 : 2;
-  return `${v.toLocaleString("ko-KR", { maximumFractionDigits: d })}${unit}`;
+  return `${v.toLocaleString(locale(), { maximumFractionDigits: d })}${unit}`;
 }
 
 export function toCsv(r: QueryResult): string {
@@ -23,6 +24,7 @@ export function toCsv(r: QueryResult): string {
 }
 
 export default function SeriesChart({ result, kind, height = 280 }: { result: QueryResult; kind: ChartKind; height?: number }) {
+  const t = useT();
   const [focus, setFocus] = useState<string | null>(null);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [hover, setHover] = useState<number | null>(null);
@@ -39,7 +41,7 @@ export default function SeriesChart({ result, kind, height = 280 }: { result: Qu
   const visible = result.series.filter((s) => !hidden.has(s.key));
   const unit = result.metric.unit;
 
-  if (!result.series.length) return <p className="an-empty">조건에 맞는 기록이 없습니다. 기간이나 농장을 넓혀 보세요.</p>;
+  if (!result.series.length) return <p className="an-empty">{t("조건에 맞는 기록이 없습니다. 기간이나 농장을 넓혀 보세요.")}</p>;
 
   if (kind === "table") {
     const maps = result.series.map((s) => new Map(s.points.map(([x, y]) => [x, y])));
@@ -103,7 +105,7 @@ export default function SeriesChart({ result, kind, height = 280 }: { result: Qu
 
   return (
     <div className="an-chart">
-      <svg viewBox={`0 0 ${W} ${H}`} onMouseMove={onMove} onMouseLeave={() => setHover(null)} role="img" aria-label={`${result.x.label}별 ${result.metric.label}`}>
+      <svg viewBox={`0 0 ${W} ${H}`} onMouseMove={onMove} onMouseLeave={() => setHover(null)} role="img" aria-label={`${result.x.label} / ${result.metric.label}`}>
         {ticks.map((t, k) => (
           <g key={k}>
             <line x1={L} x2={W - R} y1={Y(t)} y2={Y(t)} stroke="#E6EBE7" />
@@ -170,7 +172,7 @@ export default function SeriesChart({ result, kind, height = 280 }: { result: Qu
               {s.label} <em>{fmt(v as number, unit)}</em>
             </span>
           ))}
-          {hoverRows.length > 8 && <span className="an-muted">외 {hoverRows.length - 8}개</span>}
+          {hoverRows.length > 8 && <span className="an-muted">{t("외 {n}개", { n: hoverRows.length - 8 })}</span>}
         </div>
       )}
       <div className="an-legend">
@@ -185,7 +187,7 @@ export default function SeriesChart({ result, kind, height = 280 }: { result: Qu
               h.has(s.key) ? h.delete(s.key) : h.add(s.key);
               setHidden(h);
             }}
-            title="클릭: 강조 / 두 번 클릭: 숨기기"
+            title={t("클릭: 강조 / 두 번 클릭: 숨기기")}
           >
             <i style={{ background: PALETTE[i % PALETTE.length], opacity: many && focus !== s.key ? 0.35 : 1 }} />
             {s.label}

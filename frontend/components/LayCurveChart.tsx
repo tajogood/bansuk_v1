@@ -1,4 +1,5 @@
 import type { BandPoint } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 
 /**
  * 산란곡선: 같은 농장 과거 계군의 일령별 띠(하위 10%~상위 10%)와 중앙값 위에 대상 계군을 겹친다.
@@ -16,10 +17,11 @@ export default function LayCurveChart({
   height?: number;
 }) {
   const W = 720;
+  const t = useT();
   const H = height;
   const L = 52, R = 124, T = 16, B = 40;
   const pts = band.filter((b) => b.target !== null || b.median !== undefined);
-  if (pts.length < 2) return <p className="r-muted">곡선을 그릴 기록이 부족합니다.</p>;
+  if (pts.length < 2) return <p className="r-muted">{t("곡선을 그릴 기록이 부족합니다.")}</p>;
   const a0 = pts[0].age, a1 = pts[pts.length - 1].age;
   const vals = pts.flatMap((p) => [p.target, p.p10, p.p90].filter((v): v is number => typeof v === "number"));
   const vMin = Math.max(0, Math.floor((Math.min(...vals) - 5) / 10) * 10);
@@ -55,7 +57,7 @@ export default function LayCurveChart({
   const lastM = [...banded].reverse()[0];
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="r-chart" role="img" aria-label="일령별 산란율: 대상 계군과 같은 농장 과거 계군">
+    <svg viewBox={`0 0 ${W} ${H}`} className="r-chart" role="img" aria-label={t("일령별 산란율: 대상 계군과 같은 농장 과거 계군")}>
       {ageFrom !== undefined && ageTo !== undefined && (
         <rect x={X(Math.max(a0, ageFrom))} y={T} width={Math.max(0, X(Math.min(a1, ageTo)) - X(Math.max(a0, ageFrom)))} height={H - T - B} fill="#1F5F45" opacity={0.06} />
       )}
@@ -68,18 +70,18 @@ export default function LayCurveChart({
       {ticksA.map((a) => (
         <text key={a} x={X(a)} y={H - B + 18} textAnchor="middle" className="r-axis">{a}</text>
       ))}
-      <text x={W - R} y={H - 6} textAnchor="end" className="r-axis">일령</text>
+      <text x={W - R} y={H - 6} textAnchor="end" className="r-axis">{t("일령")}</text>
       {bandPath && <path d={bandPath} fill="#9AA79F" opacity={0.28} />}
       <path d={line("median")} fill="none" stroke="#7C8A81" strokeWidth={1.6} strokeDasharray="5 4" />
       <path d={line("target")} fill="none" stroke="#1F5F45" strokeWidth={2.6} />
       {lastT && (
         <text x={X(lastT.age) + 8} y={Y(lastT.target!) - 6} className="r-label r-label-strong">
-          이 계군 {lastT.target!.toFixed(1)}%
+          {t("이 계군 {v}%", { v: lastT.target!.toFixed(1) })}
         </text>
       )}
       {lastM && (
         <text x={X(lastM.age) + 8} y={Y(lastM.median!) + 16} className="r-label">
-          과거 중앙값 {lastM.median!.toFixed(1)}%
+          {t("과거 중앙값 {v}%", { v: lastM.median!.toFixed(1) })}
         </text>
       )}
     </svg>

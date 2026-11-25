@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import LangToggle from "@/components/LangToggle";
 import { api } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import type { Session } from "@/lib/types";
 
 export function formatPhone(v: string) {
@@ -13,6 +15,7 @@ export function formatPhone(v: string) {
 }
 
 export default function Login({ onLogin }: { onLogin: (s: Session, pin: string) => void }) {
+  const t = useT();
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
   const [letters, setLetters] = useState(false);
@@ -26,7 +29,7 @@ export default function Login({ onLogin }: { onLogin: (s: Session, pin: string) 
     try {
       onLogin(await api.login(phone, pin), pin);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "로그인하지 못했습니다");
+      setError(err instanceof Error ? err.message : t("로그인하지 못했습니다"));
     } finally {
       setBusy(false);
     }
@@ -36,12 +39,14 @@ export default function Login({ onLogin }: { onLogin: (s: Session, pin: string) 
     <form className="login" onSubmit={submit}>
       <div className="brand">
         <span className="brand-mark" aria-hidden>반석</span>
-        <span>반석LTC</span>
+        <span>{t("반석LTC")}</span>
+        <span className="an-spacer" />
+        <LangToggle />
       </div>
-      <h1>생산 기록</h1>
-      <p className="muted">한 번 로그인하면 이 기기에서는 다시 묻지 않습니다.</p>
+      <h1>{t("생산 기록")}</h1>
+      <p className="muted">{t("한 번 로그인하면 이 기기에서는 다시 묻지 않습니다.")}</p>
       <label>
-        휴대폰 번호
+        {t("휴대폰 번호")}
         <input
           type="tel"
           inputMode="numeric"
@@ -54,9 +59,9 @@ export default function Login({ onLogin }: { onLogin: (s: Session, pin: string) 
       </label>
       <label>
         <span className="label-row">
-          비밀번호
+          {t("비밀번호")}
           <button type="button" className="link-btn" onClick={() => setLetters(!letters)}>
-            {letters ? "숫자 키패드로" : "영문이 들어 있어요"}
+            {letters ? t("숫자 키패드로") : t("영문이 들어 있어요")}
           </button>
         </span>
         <input
@@ -71,10 +76,10 @@ export default function Login({ onLogin }: { onLogin: (s: Session, pin: string) 
       </label>
       {error && <p className="warn warn-error">{error}</p>}
       <button className="btn-primary" type="submit" disabled={busy || phone.replace(/\D/g, "").length < 10 || !pin}>
-        {busy ? "확인 중" : "로그인"}
+        {busy ? t("확인 중") : t("로그인")}
       </button>
       <p className="login-help">
-        계정은 반석에서 만들어 드립니다. 비밀번호를 잊었으면 반석 담당자에게 초기화를 요청하세요.
+        {t("계정은 반석에서 만들어 드립니다. 비밀번호를 잊었으면 반석 담당자에게 초기화를 요청하세요.")}
       </p>
     </form>
   );

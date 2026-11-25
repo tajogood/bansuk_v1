@@ -134,3 +134,16 @@ def test_deactivated_account_cannot_log_in(client):
     assert login(client, "01012121212", u["temp_pin"]).status_code == 401
     log = client.get("/api/admin/audit", headers=h).json()["items"]
     assert {"계정 생성", "계정 수정", "농장 생성", "첫 비밀번호 설정"} <= {x["action"] for x in log}
+
+
+def test_english_responses(client):
+    en = {"Accept-Language": "en"}
+    r = client.post("/api/auth/login", json={"phone": ADMIN, "pin": "nope"}, headers=en)
+    assert r.json()["detail"] == "Phone number or password is incorrect"
+    h = {**bearer(login(client, ADMIN, "135790")), **en}
+    blocked = client.get("/api/admin/users", headers=h)
+    assert blocked.json()["detail"]["message"] == "You need to set a new password"
+    me = client.get("/api/me", headers=h).json()["user"]
+    assert me["role_label"] == "Bansuk admin" and me["pin_rule"]["text"].startswith("at least 8")
+    # 한국어 요청은 그대로
+    assert client.get("/api/me", headers=bearer(login(client, ADMIN, "135790"))).json()["user"]["role_label"] == "반석 관리자"

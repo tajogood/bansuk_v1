@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import LangToggle from "@/components/LangToggle";
+import { useLang, useT } from "@/lib/i18n";
 import ReportView from "@/components/ReportView";
 import { api, downloadCsv, loadSession } from "@/lib/api";
 import type { FlockItem, FlockReport, Session } from "@/lib/types";
@@ -9,6 +11,8 @@ import "../report.css";
 const BANSUK = new Set(["bansuk_vet", "bansuk_staff", "admin"]);
 
 export default function ReportPage() {
+  const t = useT();
+  const lang = useLang();
   const [session, setSession] = useState<Session | null>(null);
   const [farmId, setFarmId] = useState<number | null>(null);
   const [flocks, setFlocks] = useState<FlockItem[]>([]);
@@ -79,6 +83,17 @@ export default function ReportPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flockId]);
 
+  // 언어를 바꾸면 서버가 만든 문구(주의 사항, 규격 이름)도 그 언어로 다시 받는다
+  const firstLang = useRef(lang);
+  useEffect(() => {
+    if (firstLang.current === lang || !session || !report) return;
+    firstLang.current = lang;
+    if (report.meta.status === "issued" && report.meta.report_no)
+      api.issued(session.token, report.meta.report_no).then(setReport).catch((e) => setError(e.message));
+    else load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
   const issue = async () => {
     if (!session || flockId === null) return;
     setBusy(true);
@@ -103,7 +118,7 @@ export default function ReportPage() {
     return (
       <main className="rp-wrap">
         <p>
-          로그인이 필요합니다. <a href="/">로그인하기</a>
+          {t("로그인이 필요합니다.")} <a href="/">{t("로그인하기")}</a>
         </p>
       </main>
     );
@@ -114,12 +129,12 @@ export default function ReportPage() {
   return (
     <main className="rp-wrap">
       <div className="rp-toolbar no-print">
-        <a href="/" className="rp-back">‹ 입력 화면</a>
+        <a href="/" className="rp-back">‹ {t("입력 화면")}</a>
         {!issued && (
           <>
             {session.farms.length > 1 && (
               <label>
-                농장
+                {t("농장")}
                 <select value={farmId ?? ""} onChange={(e) => { setFarmId(Number(e.target.value)); setReport(null); }}>
                   {session.farms.map((f) => (
                     <option key={f.id} value={f.id}>{f.name}</option>
@@ -128,43 +143,44 @@ export default function ReportPage() {
               </label>
             )}
             <label>
-              계군
+              {t("계군")}
               <select value={flockId ?? ""} onChange={(e) => { setFlockId(Number(e.target.value)); setAgeFrom(""); setAgeTo(""); setReport(null); }}>
                 {flocks.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {f.placed_on} 입추 · {f.houses.join("→")}{f.program ? " · 프로그램 적용" : ""}
+                    {t("{d} 입추", { d: f.placed_on })} · {f.houses.join("→")}{f.program ? ` · ${t("프로그램 적용")}` : ""}
                   </option>
                 ))}
               </select>
             </label>
             <label className="rp-short">
-              일령 부터
+              {t("일령 부터")}
               <input inputMode="numeric" value={ageFrom} onChange={(e) => setAgeFrom(e.target.value.replace(/\D/g, ""))} />
             </label>
             <label className="rp-short">
-              까지
+              {t("까지")}
               <input inputMode="numeric" value={ageTo} onChange={(e) => setAgeTo(e.target.value.replace(/\D/g, ""))} />
             </label>
             <label>
-              비교 기준
+              {t("비교 기준")}
               <select value={baseline} onChange={(e) => setBaseline(e.target.value)}>
-                <option value="past">먼저 입추한 계군</option>
-                <option value="all">농장 전체 계군</option>
+                <option value="past">{t("먼저 입추한 계군")}</option>
+                <option value="all">{t("농장 전체 계군")}</option>
               </select>
             </label>
-            <button type="button" onClick={load} disabled={busy}>다시 계산</button>
+            <button type="button" onClick={load} disabled={busy}>{t("다시 계산")}</button>
           </>
         )}
         <span className="rp-spacer" />
+        <LangToggle />
         {report && (
           <>
-            <button type="button" onClick={() => downloadCsv(session.token, report.flock.id, `원자료_${report.flock.placed_on}.csv`)}>
-              원자료 CSV
+            <button type="button" onClick={() => downloadCsv(session.token, report.flock.id, `${t("원자료")}_${report.flock.placed_on}.csv`)}>
+              {t("원자료 CSV")}
             </button>
-            <button type="button" onClick={() => window.print()}>인쇄 · PDF 저장</button>
+            <button type="button" onClick={() => window.print()}>{t("인쇄 · PDF 저장")}</button>
             {isBansuk && !issued && (
               <button type="button" className="rp-primary" onClick={() => setIssueOpen(true)} disabled={busy}>
-                정식 발행
+                {t("정식 발행")}
               </button>
             )}
           </>
@@ -174,18 +190,18 @@ export default function ReportPage() {
       {issueOpen && (
         <div className="rp-issue no-print">
           <p>
-            발행하면 보고서 번호가 매겨지고 지금 결과가 그대로 저장됩니다. 나중에 원자료가 바뀌어도 같은 번호의 보고서 내용은 바뀌지 않습니다.
+            {t("발행하면 보고서 번호가 매겨지고 지금 결과가 그대로 저장됩니다. 나중에 원자료가 바뀌어도 같은 번호의 보고서 내용은 바뀌지 않습니다.")}
           </p>
-          <textarea placeholder="검토 의견 (보고서에 함께 인쇄됩니다)" value={note} onChange={(e) => setNote(e.target.value)} />
+          <textarea placeholder={t("검토 의견 (보고서에 함께 인쇄됩니다)")} value={note} onChange={(e) => setNote(e.target.value)} />
           <div>
-            <button type="button" onClick={() => setIssueOpen(false)}>취소</button>
-            <button type="button" className="rp-primary" onClick={issue} disabled={busy}>발행</button>
+            <button type="button" onClick={() => setIssueOpen(false)}>{t("취소")}</button>
+            <button type="button" className="rp-primary" onClick={issue} disabled={busy}>{t("발행")}</button>
           </div>
         </div>
       )}
 
       {error && <p className="rp-error no-print">{error}</p>}
-      {busy && !report && <p className="no-print">계산 중</p>}
+      {busy && !report && <p className="no-print">{t("계산 중")}</p>}
       {report && <ReportView r={report} />}
     </main>
   );

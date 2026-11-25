@@ -18,6 +18,7 @@ import type {
   SessionUser,
   Widget,
 } from "./types";
+import { storedLang, tr } from "./i18n";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const SESSION_KEY = "bansuk.session";
@@ -51,12 +52,13 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string):
     ...init,
     headers: {
       "Content-Type": "application/json",
+      "Accept-Language": storedLang(),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init.headers ?? {}),
     },
   });
   if (!res.ok) {
-    let msg = `요청을 처리하지 못했습니다 (${res.status})`;
+    let msg = tr("요청을 처리하지 못했습니다 ({status})", { status: res.status });
     let code: string | undefined;
     try {
       const body = await res.json();
@@ -75,9 +77,9 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string):
 
 export async function downloadCsv(token: string, flockId: number, filename: string) {
   const res = await fetch(`${API_URL}/api/reports/flocks/${flockId}/data.csv`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, "Accept-Language": storedLang() },
   });
-  if (!res.ok) throw new ApiError(res.status, "원자료를 받지 못했습니다");
+  if (!res.ok) throw new ApiError(res.status, tr("원자료를 받지 못했습니다"));
   const url = URL.createObjectURL(await res.blob());
   const a = document.createElement("a");
   a.href = url;
