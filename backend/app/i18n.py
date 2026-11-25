@@ -124,6 +124,21 @@ EXACT: dict[str, str] = {
     "정식 발행된 보고서가 있는 계군은 지울 수 없습니다": "A flock with officially issued reports cannot be deleted",
     "입추 등록": "Flock placed", "계군 수정": "Flock edited", "계사 이동": "House move", "계군 종료": "Flock closed",
     "계군 종료 취소": "Flock reopened", "계사 이동 취소": "House move undone", "계군 삭제": "Flock deleted",
+    # 엑셀 업로드
+    "엑셀 파일(.xlsx)만 올릴 수 있습니다. 예전 형식(.xls)은 엑셀에서 '다른 이름으로 저장 → .xlsx'로 바꿔 주세요":
+        "Only Excel .xlsx files can be uploaded. Save older .xls files as .xlsx in Excel first",
+    "파일이 너무 큽니다 (40MB 이하)": "File is too large (max 40 MB)",
+    "이 농장 양식으로 파일을 읽지 못했습니다. 다른 농장 파일이거나 양식이 바뀌었을 수 있습니다":
+        "Could not read the file with this farm's format. It may be another farm's file, or the layout may have changed",
+    "이 농장은 아직 엑셀 양식이 등록되지 않았습니다. 반석에 엑셀 파일을 보내 주시면 등록해 드립니다":
+        "No Excel format is set up for this farm yet. Send your Excel file to Bansuk and it will be set up",
+    "파일에서 읽을 수 있는 기록이 없습니다": "No readable records were found in the file",
+    "이미 처리한 업로드입니다": "This upload has already been handled",
+    "반영한 업로드만 되돌릴 수 있습니다": "Only applied uploads can be undone",
+    "업로드 기록을 찾을 수 없습니다": "Upload not found",
+    "등록되지 않은 엑셀 양식입니다": "Unknown Excel format",
+    "엑셀 업로드 반영": "Excel upload applied", "엑셀 업로드 되돌림": "Excel upload undone",
+    "사양관리현황 (월별 시트, 항목×동 행, 1~31일 열)": "Production sheet (monthly tabs, item × house rows, day 1–31 columns)",
     # 분석기 카탈로그
     "생산 기록": "Production records",
     "산란율": "Lay rate", "총 산란수": "Total eggs", "수수(평균)": "Birds (average)", "폐사수": "Mortality",

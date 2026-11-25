@@ -55,7 +55,7 @@ def seed(reset: bool = True, days: int = 45) -> None:
     rnd = random.Random(42)
     today = dt.date.today()
 
-    farm = Farm(name=DEMO_FARM, region="충북", contract_type="program")
+    farm = Farm(name=DEMO_FARM, region="충북", contract_type="program", importer="sayang_monthly")
     db.add(farm)
     db.flush()
     db.add(FarmInputConfig(farm_id=farm.id))

@@ -182,6 +182,7 @@ export type AdminFarm = {
   region: string | null;
   contract_type: "program" | "test_only";
   active: boolean;
+  importer: string | null;
   houses: AdminHouse[];
   accounts: { id: number; name: string }[];
   config: FarmConfigIn | null;
@@ -340,4 +341,31 @@ export type FlockBoard = {
   active: ManagedFlock[];
   closed: ManagedFlock[];
   unlinked_records: number;
+};
+
+// ---------- 엑셀 업로드 ----------
+export type ImportTotals = { new: number; overwrite: number; unchanged: number; skip_manual: number; skip_house: number; skip_future: number };
+export type ImportBatchItem = {
+  id: number;
+  status: "preview" | "applied" | "reverted" | "discarded";
+  filename: string;
+  importer: string;
+  overwrite_manual: boolean;
+  summary: {
+    rows?: number;
+    period?: [string, string] | null;
+    totals?: ImportTotals;
+    houses?: { house: string; rows: number; new: number; overwrite: number; unchanged: number; skip_manual: number; first: string | null; last: string | null }[];
+    unknown_houses?: { house: string; rows: number }[];
+    no_flock?: number;
+    months?: string[];
+    warnings?: ({ code: string } & Record<string, string | number>)[];
+    applied?: { new: number; overwrite: number };
+    reverted?: { restored: number; kept: number };
+  };
+  uploaded_by: string | null;
+  uploaded_at: string | null;
+  applied_at: string | null;
+  reverted_at: string | null;
+  reverted_by: string | null;
 };

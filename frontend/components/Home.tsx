@@ -202,6 +202,9 @@ function InputList(p: Props) {
           )}
         </div>
       )}
+      <a className="upload-link" href={`/upload/?farm=${p.farmId}`}>
+        {t("엑셀 파일로 한꺼번에 올리기")}
+      </a>
       {houses.some((h) => !h.flock) && (
         <a className="flock-hint" href={`/flocks/?farm=${p.farmId}`}>
           {t("계군이 등록되지 않은 동이 있습니다. 입추를 등록하면 일령과 산란 비교가 나옵니다.")}

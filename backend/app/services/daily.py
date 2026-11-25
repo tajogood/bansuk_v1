@@ -71,17 +71,31 @@ def _auto_count(db: Session, rec: DailyRecord) -> int | None:
 
 
 def recompute_forward(db: Session, house_id: int, from_day: dt.date) -> None:
-    """앞 날짜를 고치면 그 뒤 날짜들의 자동 수수를 다시 계산한다."""
+    """앞 날짜를 고치면 그 뒤 날짜들의 자동 수수를 다시 계산한다.
+
+    _auto_count와 같은 규칙(같은 계군의 전날 수수 - 폐사 - 도태, 전날 수수가 없으면 계사 전입 수수)을
+    메모리에서 이어 계산한다 (엑셀 수천 행을 올려도 행마다 DB를 묻지 않게).
+    """
     rows = (
         db.query(DailyRecord)
         .filter(DailyRecord.house_id == house_id, DailyRecord.date > from_day)
         .order_by(DailyRecord.date)
         .all()
     )
+    prev: dict[int | None, int | None] = {}
     for r in rows:
+        key = r.flock_id
+        if key not in prev:
+            p = _previous(db, house_id, r.date, key)
+            prev[key] = p.bird_count if p else None
         if not r.bird_count_manual:
-            r.bird_count = _auto_count(db, r)
-            db.flush()
+            base = prev[key]
+            if base is None:
+                loc = flock_location_at(db, house_id, r.date)
+                base = starting_count(db, loc) if loc else None
+            r.bird_count = None if base is None else base - (r.mortality or 0) - (r.cull or 0)
+        prev[key] = r.bird_count
+    db.flush()
 
 
 def upsert(

@@ -59,6 +59,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [farms, setFarms] = useState<AdminFarm[]>([]);
   const [grades, setGrades] = useState<Record<string, string>>({});
+  const [importers, setImporters] = useState<Record<string, string>>({});
   const [audit, setAudit] = useState<AuditItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [userDraft, setUserDraft] = useState<UserDraft | null>(null);
@@ -83,6 +84,7 @@ export default function AdminPage() {
       setUsers(u.users);
       setFarms(f.farms);
       setGrades(f.grades);
+      setImporters(f.importers ?? {});
       setAudit(a.items);
     } catch (e) {
       setError((e as Error).message);
@@ -152,6 +154,7 @@ export default function AdminPage() {
         region: farmDraft.region || null,
         contract_type: farmDraft.contract_type,
         active: farmDraft.active,
+        importer: farmDraft.importer || null,
         houses: farmDraft.houses.filter((h) => h.name.trim()),
         config: farmDraft.config,
       };
@@ -335,7 +338,7 @@ export default function AdminPage() {
                 className="ad-btn an-primary"
                 onClick={() => {
                   setFormError(null);
-                  setFarmDraft({ name: "", region: "", contract_type: "program", active: true, houses: [{ name: t("{n}동", { n: 1 }), kind: "laying", active: true }], config: DEFAULT_CONFIG });
+                  setFarmDraft({ name: "", region: "", contract_type: "program", active: true, importer: null, houses: [{ name: t("{n}동", { n: 1 }), kind: "laying", active: true }], config: DEFAULT_CONFIG });
                 }}
               >
                 {t("농장 만들기")}
@@ -388,7 +391,7 @@ export default function AdminPage() {
                         className="an-mini"
                         onClick={() => {
                           setFormError(null);
-                          setFarmDraft({ id: f.id, name: f.name, region: f.region ?? "", contract_type: f.contract_type, active: f.active, houses: f.houses, config: f.config ?? DEFAULT_CONFIG });
+                          setFarmDraft({ id: f.id, name: f.name, region: f.region ?? "", contract_type: f.contract_type, active: f.active, importer: f.importer, houses: f.houses, config: f.config ?? DEFAULT_CONFIG });
                         }}
                       >
                         {t("고치기")}
@@ -527,6 +530,18 @@ export default function AdminPage() {
               </label>
             </div>
 
+            <label>
+              {t("엑셀 양식 (농장주 업로드용)")}
+              <select value={farmDraft.importer ?? ""} onChange={(e) => setFarmDraft({ ...farmDraft, importer: e.target.value || null })}>
+                <option value="">{t("없음 (직접 입력만)")}</option>
+                {Object.entries(importers).map(([code, label]) => (
+                  <option key={code} value={code}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <small className="an-muted">{t("새 농장 양식은 개발해서 이 목록에 추가합니다.")}</small>
+            </label>
             <fieldset>
               <legend>{t("계사 (농장주 입력 화면의 순서)")}</legend>
               <div className="ad-houses">

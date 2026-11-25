@@ -25,6 +25,7 @@ from ..security import (
     set_temp_pin,
     valid_phone,
 )
+from ..importers import FORMATS, LABELS
 from ..settings import EGG_GRADES
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -213,6 +214,7 @@ class FarmIn(BaseModel):
     region: str | None = Field(default=None, max_length=100)
     contract_type: Literal["program", "test_only"] = "program"
     active: bool = True
+    importer: str | None = None
     houses: list[HouseIn] = []
     config: ConfigIn | None = None
 
@@ -231,6 +233,7 @@ def _farm_dict(db: Session, f: Farm) -> dict:
         "region": f.region,
         "contract_type": f.contract_type,
         "active": f.active,
+        "importer": f.importer,
         "houses": [{"id": h.id, "name": h.name, "kind": h.kind, "active": h.active} for h in f.houses],
         "accounts": [{"id": i, "name": n} for i, n in owners],
         "config": {
@@ -279,12 +282,18 @@ def _apply_config(db: Session, farm: Farm, c: ConfigIn | None) -> None:
         db.add(cfg)
 
 
+def _check_importer(code: str | None) -> None:
+    if code and code not in FORMATS:
+        raise HTTPException(400, "등록되지 않은 엑셀 양식입니다")
+
+
 @router.get("/farms")
 def list_farms(_: User = Depends(admin_user), db: Session = Depends(get_db)):
     farms = db.query(Farm).order_by(Farm.active.desc(), Farm.name).all()
     return {
         "farms": [_farm_dict(db, f) for f in farms],
         "grades": {k: v for k, v in EGG_GRADES.items()},
+        "importers": LABELS,
     }
 
 
@@ -292,7 +301,8 @@ def list_farms(_: User = Depends(admin_user), db: Session = Depends(get_db)):
 def create_farm(body: FarmIn, admin: User = Depends(admin_user), db: Session = Depends(get_db)):
     if db.query(Farm).filter(func.lower(Farm.name) == body.name.strip().lower()).first():
         raise HTTPException(409, "같은 이름의 농장이 있습니다")
-    f = Farm(name=body.name.strip(), region=body.region, contract_type=body.contract_type, active=body.active)
+    _check_importer(body.importer)
+    f = Farm(name=body.name.strip(), region=body.region, contract_type=body.contract_type, active=body.active, importer=body.importer or None)
     db.add(f)
     db.flush()
     _apply_houses(db, f, body.houses)
@@ -311,7 +321,9 @@ def update_farm(farm_id: int, body: FarmIn, admin: User = Depends(admin_user), d
     dup = db.query(Farm).filter(func.lower(Farm.name) == body.name.strip().lower(), Farm.id != f.id).first()
     if dup:
         raise HTTPException(409, "같은 이름의 농장이 있습니다")
+    _check_importer(body.importer)
     f.name, f.region, f.contract_type, f.active = body.name.strip(), body.region, body.contract_type, body.active
+    f.importer = body.importer or None
     _apply_houses(db, f, body.houses)
     _apply_config(db, f, body.config)
     audit(db, admin.id, "farm_updated", target_farm_id=f.id)
@@ -333,6 +345,8 @@ ACTION_LABELS = {
     "login_locked": "로그인 잠김",
     "farm_created": "농장 생성",
     "farm_updated": "농장 수정",
+    "import_applied": "엑셀 업로드 반영",
+    "import_reverted": "엑셀 업로드 되돌림",
     "flock_placed": "입추 등록",
     "flock_updated": "계군 수정",
     "flock_moved": "계사 이동",

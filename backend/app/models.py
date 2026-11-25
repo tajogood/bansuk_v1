@@ -37,6 +37,8 @@ class Farm(Base):
     contract_start: Mapped[dt.date | None] = mapped_column(Date)
     contract_end: Mapped[dt.date | None] = mapped_column(Date)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # 이 농장 엑셀을 읽는 파서 (app/importers의 FORMATS 키). 새 농장 양식은 개발해서 등록한다.
+    importer: Mapped[str | None] = mapped_column(String(40))
 
     houses: Mapped[list[House]] = relationship(back_populates="farm", order_by="House.sort_order")
     config: Mapped[FarmInputConfig | None] = relationship(back_populates="farm", uselist=False)
@@ -364,3 +366,40 @@ class Notification(Base):
     data: Mapped[dict | None] = mapped_column(JSON)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
     read_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
+
+
+# ---------------------------------------------------------------------------
+# 농장 엑셀 업로드
+# ---------------------------------------------------------------------------
+
+class ImportBatch(Base):
+    """엑셀 업로드 한 번. preview(미리보기) → applied(반영) → reverted(되돌림) | discarded(취소)."""
+
+    __tablename__ = "import_batch"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"), index=True)
+    importer: Mapped[str] = mapped_column(String(40))
+    filename: Mapped[str] = mapped_column(String(255))
+    file_key: Mapped[str] = mapped_column(String(200))  # 원본 파일 보관 위치
+    rows_key: Mapped[str | None] = mapped_column(String(200))  # 파싱한 행 (JSON) 보관 위치
+    status: Mapped[str] = mapped_column(String(20), default="preview")
+    overwrite_manual: Mapped[bool] = mapped_column(Boolean, default=False)
+    summary: Mapped[dict] = mapped_column(JSON, default=dict)
+    uploaded_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    uploaded_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+    applied_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
+    reverted_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
+    reverted_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+
+
+class ImportChange(Base):
+    """반영 때 바꾼 일일 기록 하나 (되돌리기용). created면 지우고, updated면 이전 값으로 돌린다."""
+
+    __tablename__ = "import_change"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    batch_id: Mapped[int] = mapped_column(ForeignKey("import_batch.id"), index=True)
+    record_id: Mapped[int] = mapped_column(Integer, index=True)
+    action: Mapped[str] = mapped_column(String(10))  # created | updated
+    before: Mapped[dict | None] = mapped_column(JSON)

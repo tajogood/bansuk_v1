@@ -7,6 +7,7 @@ import type {
   Role,
   NecropsyCase,
   FlockBoard,
+  ImportBatchItem,
   ManagedFlock,
   NotificationItem,
   CaseResult,
@@ -147,6 +148,7 @@ type FarmIn = {
   region: string | null;
   contract_type: "program" | "test_only";
   active: boolean;
+  importer: string | null;
   houses: AdminHouse[];
   config: FarmConfigIn | null;
 };
@@ -160,7 +162,7 @@ export const adminApi = {
   resetPin: (t: string, id: number) =>
     request<{ user: AdminUser; temp_pin: string }>(`/api/admin/users/${id}/reset-pin`, { method: "POST" }, t),
   unlock: (t: string, id: number) => request<{ user: AdminUser }>(`/api/admin/users/${id}/unlock`, { method: "POST" }, t),
-  farms: (t: string) => request<{ farms: AdminFarm[]; grades: Record<string, string> }>("/api/admin/farms", {}, t),
+  farms: (t: string) => request<{ farms: AdminFarm[]; grades: Record<string, string>; importers: Record<string, string> }>("/api/admin/farms", {}, t),
   createFarm: (t: string, b: FarmIn) =>
     request<{ farm: AdminFarm }>("/api/admin/farms", { method: "POST", body: JSON.stringify(b) }, t),
   updateFarm: (t: string, id: number, b: FarmIn) =>
@@ -234,4 +236,43 @@ export const flocksApi = {
     request<FlockRes>(`/api/flocks/${id}/close`, { method: "POST", body: JSON.stringify(b) }, t),
   undo: (t: string, id: number) => request<FlockRes>(`/api/flocks/${id}/undo`, { method: "POST" }, t),
   remove: (t: string, id: number) => request<{ ok: boolean }>(`/api/flocks/${id}`, { method: "DELETE" }, t),
+};
+
+export const importsApi = {
+  list: (t: string, farmId: number) =>
+    request<{ importer: { code: string; label: string } | null; batches: ImportBatchItem[] }>(`/api/farms/${farmId}/imports`, {}, t),
+  upload: async (t: string, farmId: number, file: File, overwriteManual: boolean) => {
+    const fd = new FormData();
+    fd.append("file", file, file.name);
+    fd.append("overwrite_manual", overwriteManual ? "true" : "false");
+    const res = await fetch(`${API_URL}/api/farms/${farmId}/imports`, {
+      method: "POST",
+      body: fd,
+      headers: { Authorization: `Bearer ${t}`, "Accept-Language": storedLang() },
+    });
+    if (!res.ok) {
+      let msg = tr("요청을 처리하지 못했습니다 ({status})", { status: res.status });
+      try {
+        const b = await res.json();
+        if (typeof b.detail === "string") msg = b.detail;
+      } catch {
+        /* 본문 없음 */
+      }
+      throw new ApiError(res.status, msg);
+    }
+    return (await res.json()) as ImportBatchItem;
+  },
+  apply: (t: string, id: number) => request<ImportBatchItem>(`/api/imports/${id}/apply`, { method: "POST" }, t),
+  discard: (t: string, id: number) => request<ImportBatchItem>(`/api/imports/${id}/discard`, { method: "POST" }, t),
+  revert: (t: string, id: number) => request<ImportBatchItem>(`/api/imports/${id}/revert`, { method: "POST" }, t),
+  download: async (t: string, b: ImportBatchItem) => {
+    const res = await fetch(`${API_URL}/api/imports/${b.id}/file`, { headers: { Authorization: `Bearer ${t}` } });
+    if (!res.ok) throw new ApiError(res.status, tr("원본 파일을 받지 못했습니다"));
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = b.filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 };

@@ -30,6 +30,8 @@
 html,
 body {
   margin: 0;
+  word-break: keep-all; /* 한국어 낱말이 줄 끝에서 갈라지지 않게 */
+  overflow-wrap: anywhere;
   background: var(--paper);
   color: var(--ink);
   font-family: "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR",
@@ -1120,4 +1122,16 @@ main {
   font-size: 15px;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.upload-link {
+  display: block;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1.5px dashed var(--line);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--barn);
+  font-weight: 700;
+  text-decoration: none;
 }
