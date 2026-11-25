@@ -1,9 +1,14 @@
 "use client";
 
+import Dashboard from "./Dashboard";
 import { dateLabel, num, relDay, shiftISO, todayISO } from "@/lib/format";
 import type { DayView, Farm } from "@/lib/types";
 
 type Props = {
+  tab: "input" | "status";
+  onTab: (t: "input" | "status") => void;
+  token: string;
+  isBansuk: boolean;
   day: DayView | null;
   date: string;
   farms: Farm[];
@@ -22,9 +27,6 @@ type Props = {
 export default function Home(p: Props) {
   const rel = relDay(p.date);
   const canNext = p.date < todayISO();
-  const houses = p.day?.houses ?? [];
-  const firstTodo = houses.find((h) => !h.record && !p.queued.has(h.house.id));
-  const done = houses.filter((h) => h.record || p.queued.has(h.house.id)).length;
 
   return (
     <div className="home">
@@ -63,6 +65,37 @@ export default function Home(p: Props) {
         </button>
       </nav>
 
+      <div className="tabs" role="tablist">
+        <button type="button" role="tab" aria-selected={p.tab === "input"} onClick={() => p.onTab("input")}>
+          입력
+        </button>
+        <button type="button" role="tab" aria-selected={p.tab === "status"} onClick={() => p.onTab("status")}>
+          현황
+        </button>
+      </div>
+
+      {p.tab === "status" ? (
+        <>
+          <Dashboard token={p.token} farmId={p.farmId} date={p.date} />
+          {p.isBansuk && (
+            <a className="report-link" href={`/report/?farm=${p.farmId}`}>
+              계군 성적 보고서 만들기
+            </a>
+          )}
+        </>
+      ) : (
+        <InputList {...p} />
+      )}
+    </div>
+  );
+}
+
+function InputList(p: Props) {
+  const houses = p.day?.houses ?? [];
+  const firstTodo = houses.find((h) => !h.record && !p.queued.has(h.house.id));
+  const done = houses.filter((h) => h.record || p.queued.has(h.house.id)).length;
+  return (
+    <>
       {p.error && (
         <div className="banner banner-error">
           <span>{p.error}</span>
@@ -140,6 +173,6 @@ export default function Home(p: Props) {
           )}
         </div>
       )}
-    </div>
+    </>
   );
 }

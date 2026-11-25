@@ -1,4 +1,4 @@
-import type { DayView, HouseView, Session } from "./types";
+import type { Dashboard, DayView, FlockItem, FlockReport, HouseView, Session } from "./types";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const SESSION_KEY = "bansuk.session";
@@ -49,7 +49,34 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string):
   return res.json() as Promise<T>;
 }
 
+export async function downloadCsv(token: string, flockId: number, filename: string) {
+  const res = await fetch(`${API_URL}/api/reports/flocks/${flockId}/data.csv`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, "원자료를 받지 못했습니다");
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
+  flocks: (token: string, farmId: number) =>
+    request<{ flocks: FlockItem[] }>(`/api/farms/${farmId}/flocks`, {}, token),
+  report: (token: string, flockId: number, q: { age_from?: number; age_to?: number; baseline?: string }) => {
+    const p = new URLSearchParams();
+    if (q.age_from) p.set("age_from", String(q.age_from));
+    if (q.age_to) p.set("age_to", String(q.age_to));
+    if (q.baseline) p.set("baseline", q.baseline);
+    return request<FlockReport>(`/api/reports/flocks/${flockId}?${p}`, {}, token);
+  },
+  issue: (token: string, flockId: number, body: object) =>
+    request<FlockReport>(`/api/reports/flocks/${flockId}/issue`, { method: "POST", body: JSON.stringify(body) }, token),
+  issued: (token: string, reportNo: string) => request<FlockReport>(`/api/reports/issued/${reportNo}`, {}, token),
+  dashboard: (token: string, farmId: number, date: string) =>
+    request<Dashboard>(`/api/farms/${farmId}/dashboard?date=${date}`, {}, token),
   login: (phone: string, pin: string) =>
     request<Session>("/api/auth/login", { method: "POST", body: JSON.stringify({ phone, pin }) }),
   day: (token: string, farmId: number, date: string) =>

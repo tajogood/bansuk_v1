@@ -144,9 +144,11 @@ def flock_report(
     t_lay = _lay_by_age(target, t_recs)
     t_ma = _moving_avg(t_lay)
 
-    # 비교 구간: 지정이 없으면 이 계군의 산란 기록이 있는 일령 전체
+    # 비교 구간: 지정이 없으면 7일 평균 산란율 50% 도달부터 마지막 기록까지.
+    # 산란 개시 직전·직후는 며칠 차이로 비율이 크게 달라져 성적 비교를 왜곡하므로 뺀다.
     laid = sorted(a for a, v in t_lay.items() if v >= 5)
-    a0 = age_from if age_from is not None else (laid[0] if laid else None)
+    a50 = next((a for a in sorted(t_ma) if t_ma[a] >= 50), None)
+    a0 = age_from if age_from is not None else (a50 or (laid[0] if laid else None))
     a1 = age_to if age_to is not None else (laid[-1] if laid else None)
 
     q = db.query(Flock).filter(Flock.farm_id == target.farm_id, Flock.id != target.id)
@@ -212,7 +214,8 @@ def flock_report(
         for g in EGG_GRADES:
             tv = (t_sum or {}).get("grade_share", {}).get(g)
             pv = [s["grade_share"].get(g, 0) for _, s in peers if s.get("grade_share")]
-            if tv is None and not any(pv):
+            med = statistics.median(pv) if pv else 0
+            if not tv and round(med, 1) == 0:  # 양쪽 모두 0인 규격은 표에서 뺀다
                 continue
             grade_rows.append(
                 {"grade": g, "label": EGG_GRADES[g], "target": tv or 0, "median": round(statistics.median(pv), 2) if pv else None}
@@ -346,7 +349,8 @@ def house_trends(db: Session, farm_id: int, end: dt.date, days: int = 28) -> lis
         if flock:
             t_ma = ma_for(flock)
             age_now = _age(flock, end)
-            cand = [a for a in t_ma if a <= age_now]
+            # 최근 3일 안의 값만 '지금' 성적으로 본다 (출하가 끝난 계군의 옛 값을 보여주지 않게)
+            cand = [a for a in t_ma if age_now - 3 <= a <= age_now]
             if cand:
                 a = max(cand)
                 peers = [ma_for(f).get(a) for f in farm_flocks if f.id != flock.id and f.placed_on < flock.placed_on]

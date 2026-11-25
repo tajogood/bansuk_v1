@@ -25,6 +25,7 @@ export default function Page() {
   const [pendingCount, setPendingCount] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
+  const [tab, setTab] = useState<"input" | "status">("input");
 
   // 시작: 저장된 로그인 불러오기
   useEffect(() => {
@@ -181,6 +182,10 @@ export default function Page() {
         />
       ) : (
         <Home
+          tab={tab}
+          onTab={setTab}
+          token={session.token}
+          isBansuk={["bansuk_vet", "bansuk_staff", "admin"].includes(session.user.role)}
           day={day}
           date={date}
           farms={session.farms}

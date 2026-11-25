@@ -1,0 +1,363 @@
+/* 정식 보고서: 화면에서는 A4 용지처럼, 인쇄·PDF에서는 A4 그대로 */
+.rp-wrap {
+  max-width: none;
+  background: #eef1ee;
+  min-height: 100vh;
+  padding: 0 0 40px;
+}
+.rp-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+  padding: 12px 20px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.rp-toolbar label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--ink-2);
+}
+.rp-toolbar select,
+.rp-toolbar input {
+  min-height: 38px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 15px;
+}
+.rp-short input {
+  width: 72px;
+  font-variant-numeric: tabular-nums;
+}
+.rp-toolbar button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font-weight: 600;
+}
+.rp-toolbar .rp-primary,
+.rp-issue .rp-primary {
+  background: var(--barn);
+  border-color: var(--barn);
+  color: #fff;
+}
+.rp-back {
+  align-self: center;
+  color: var(--ink-2);
+  text-decoration: none;
+  margin-right: 6px;
+}
+.rp-spacer {
+  flex: 1;
+}
+.rp-issue {
+  max-width: 210mm;
+  margin: 16px auto 0;
+  padding: 16px;
+  background: #fff;
+  border: 1.5px solid var(--barn);
+  border-radius: 10px;
+}
+.rp-issue p {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+.rp-issue textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.rp-issue div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+.rp-issue button {
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font-weight: 600;
+}
+.rp-error {
+  max-width: 210mm;
+  margin: 16px auto 0;
+  color: var(--bad);
+}
+
+/* ---------- 보고서 본문 ---------- */
+.report {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 20px auto 0;
+  padding: 16mm 15mm 14mm;
+  background: #fff;
+  color: #18211c;
+  font-size: 10pt;
+  line-height: 1.55;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.r-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #18211c;
+}
+.r-org {
+  margin: 0 0 2px;
+  font-size: 9pt;
+  color: #4b5a51;
+}
+.r-head h1 {
+  margin: 0;
+  font-size: 19pt;
+  letter-spacing: -0.02em;
+}
+.r-id {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+  text-align: right;
+  font-size: 9pt;
+}
+.r-id div {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.r-id dt {
+  color: #4b5a51;
+}
+.r-id dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.r-alert {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--caution);
+  background: var(--caution-bg);
+  color: var(--caution);
+  font-weight: 600;
+}
+.r-facts {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+}
+.r-facts th,
+.r-facts td {
+  padding: 5px 8px;
+  border-bottom: 1px solid #dde3de;
+  text-align: left;
+  vertical-align: top;
+}
+.r-facts th {
+  width: 16%;
+  color: #4b5a51;
+  font-weight: 600;
+  background: #f5f7f5;
+}
+.r-sec {
+  margin-top: 16px;
+}
+.r-sec h2 {
+  margin: 0 0 6px;
+  font-size: 11.5pt;
+  letter-spacing: -0.01em;
+}
+.r-summary {
+  margin: 0;
+  padding-left: 1.1em;
+}
+.r-summary li {
+  margin: 2px 0;
+}
+.r-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.r-axis {
+  font-size: 11px;
+  fill: #6b7a71;
+  font-variant-numeric: tabular-nums;
+}
+.r-label {
+  font-size: 12px;
+  fill: #4b5a51;
+}
+.r-label-strong {
+  font-weight: 700;
+  fill: #1f5f45;
+}
+.r-caption {
+  margin: 4px 0 0;
+  font-size: 8.5pt;
+  color: #5c6b62;
+}
+.r-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+}
+.r-table th,
+.r-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #e3e8e4;
+  text-align: left;
+}
+.r-table thead th {
+  border-bottom: 1.5px solid #18211c;
+  font-weight: 600;
+  color: #4b5a51;
+  font-size: 9pt;
+}
+.r-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.r-table .strong {
+  font-weight: 700;
+  color: #1f5f45;
+}
+.r-unit {
+  color: #6b7a71;
+  font-size: 8.5pt;
+}
+.r-grades td:first-child {
+  width: 14%;
+}
+.r-barcell {
+  position: relative;
+  width: 46%;
+}
+.r-bar {
+  display: block;
+  height: 9px;
+  border-radius: 2px;
+  background: #1f5f45;
+}
+.r-bar-mark {
+  position: absolute;
+  top: 3px;
+  width: 2px;
+  height: 17px;
+  background: #18211c;
+}
+.r-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.r-muted {
+  color: #6b7a71;
+}
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.02em;
+}
+.r-notes {
+  margin: 0;
+  padding-left: 1.1em;
+  font-size: 9pt;
+  color: #2c3831;
+}
+.r-notes li {
+  margin: 2px 0;
+}
+.r-sign {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 18px;
+}
+.r-note-box {
+  min-height: 22mm;
+  padding: 6px 8px;
+  border: 1px solid #c9d1cb;
+  white-space: pre-wrap;
+}
+.r-sign-box {
+  align-self: end;
+}
+.r-sign-box p {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 10px 0 0;
+}
+.r-sign-box span {
+  flex: 1;
+  min-height: 1.5em;
+  border-bottom: 1px solid #18211c;
+  font-weight: 600;
+}
+.r-sign-box .r-muted {
+  justify-content: flex-end;
+  font-size: 8.5pt;
+}
+.r-foot {
+  margin-top: 16px;
+  padding-top: 6px;
+  border-top: 1px solid #c9d1cb;
+  font-size: 7.5pt;
+  color: #6b7a71;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  body {
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .rp-wrap {
+    background: #fff;
+    padding: 0;
+  }
+  .report {
+    margin: 0;
+    box-shadow: none;
+  }
+  .r-avoid-break,
+  .r-chart {
+    break-inside: avoid;
+  }
+}
+
+@media screen and (max-width: 800px) {
+  .report {
+    width: auto;
+    min-height: 0;
+    margin: 12px;
+    padding: 18px 14px;
+  }
+  .r-two,
+  .r-sign {
+    grid-template-columns: 1fr;
+  }
+}
