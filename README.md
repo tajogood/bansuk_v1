@@ -1,0 +1,99 @@
+# 반석 가금 생산·방역 관리 시스템 (v1)
+
+반석LTC와 고객 산란계 농장이 함께 쓰는 시스템입니다. 농장주는 매일 생산 기록을 넣고, 반석은 그 기록과 부검·검사 결과를 묶어 백신프로그램을 설계하고 결과를 확인합니다.
+
+- 요구사항·양식·용어 정리: [반석LTC 시스템 구축 — 데이터 양식·용어·요구사항 정리](https://claude.ai/artifact/JQbF9ZaWLAP19poB7aTZfY)
+- 설계서: [반석LTC 가금 생산·방역 관리 시스템 설계서 v0.1](https://claude.ai/artifact/PoMN4Hdjakc8hBNaTTtrVa)
+
+## 지금 들어 있는 것 (1단계: 생산 MVP 중)
+
+| 영역 | 내용 |
+| --- | --- |
+| 농장주 모바일 일일 입력 | 동 목록, 큰 숫자 키패드, 판 단위 입력, 어제 값 표시·복사, 실시간 산란율, 경고, 오프라인 보관 |
+| 백엔드 API | 농장·계사·계군·일일기록, PIN 로그인, 농장별 권한, 수수 자동 계산, 지표·경고 |
+| 엑셀 이관 | 농장 사양관리현황(월별 가로형 시트) → 일일 기록, 계군 자동 추정, 검증 리포트 |
+
+<p>
+  <img src="docs/screenshots/home.png" width="220" alt="동 목록">
+  <img src="docs/screenshots/entry.png" width="220" alt="입력 화면">
+  <img src="docs/screenshots/warning.png" width="220" alt="저장 후 경고">
+  <img src="docs/screenshots/offline.png" width="220" alt="전송 대기">
+</p>
+
+## 일일 입력 화면을 이렇게 만든 이유
+
+농장주와 관리인은 계사 안에서, 장갑을 끼거나 손이 더러운 채로, 한 손에 폰을 들고 6~7개 동을 매일 입력합니다. 입력이 번거로우면 기록이 끊기고, 기록이 끊기면 반석의 분석과 백신프로그램 평가가 불가능해집니다.
+
+- **OS 키보드 대신 고정 키패드**: 칸마다 키보드가 오르내리며 화면이 흔들리지 않고, `다음` 한 번으로 다음 칸에 갑니다.
+- **판 단위 입력**: 규격별 산란수는 판(30개)으로 넣고 개로 바꿔 저장합니다. 사양관리 엑셀의 규격별 숫자가 모두 30의 배수라 판으로 세고 있다고 보았습니다.
+- **어제와 같음**: 어제 값을 옆에 보여 주고, 같으면 한 번 눌러 넣고 다음 칸으로 갑니다.
+- **필요한 칸만**: 폐사·규격별 산란·사료가 필수, 급수·온도·습도는 선택. 도태·난중 등은 농장 설정으로 켭니다.
+- **저장하면 다음 동으로**: 아직 안 넣은 다음 동이 바로 열립니다. 필수 칸을 다 채웠으면 아무것도 묻지 않습니다.
+- **입력 즉시 확인**: 산란율 100% 초과, 폐사 급증(평소 대비 마릿수로 안내), 산란·섭취·급수 급감을 바로 알려 줍니다.
+- **전파가 약해도**: 저장이 안 되면 폰에 보관했다가 연결되면 자동으로 보냅니다.
+
+측정(데모 데이터, 헤드리스 브라우저): 한 동을 실제 숫자로 다 넣는 데 터치 36번(대부분 숫자 자체), 어제와 거의 같은 동은 11번.
+
+## 실행
+
+```bash
+# 백엔드
+cd backend
+pip install -r requirements.txt
+python -m app.seed                 # 가상 데모 데이터 (bansuk.db)
+uvicorn app.main:app --reload --port 8000
+
+# 프론트엔드
+cd frontend
+cp .env.example .env.local         # NEXT_PUBLIC_API_URL
+npm install
+npm run dev                        # http://localhost:3000
+```
+
+데모 계정: 농장주 `010-0000-0000` / PIN `1234`, 반석 `010-1111-1111` / PIN `1234`
+
+테스트: `cd backend && python -m pytest`
+
+### 사양관리 엑셀 이관
+
+```bash
+cd backend
+python -m app.importers.sayang 사양관리현황.xlsx --farm "농장명" --dry-run   # 검증 리포트만
+python -m app.importers.sayang 사양관리현황.xlsx --farm "농장명" --csv out.csv
+python -m app.importers.sayang 사양관리현황.xlsx --farm "농장명"             # DB에 반영
+```
+
+- 행 위치가 해마다 달라서 A열 항목명·B열 동 이름으로 찾습니다.
+- 산란율·수사비 같은 계산값은 가져오지 않고 원자료만 가져옵니다 (기존 엑셀의 월 평균 수식 오류를 반복하지 않기 위해).
+- 주령 칸 형식이 시기마다 달라(`333-47`, `57-405`) 큰 숫자를 일령으로 읽고, 앞뒤 3일 중앙값으로 계군 경계를 정합니다.
+- 육성사와 산란계사의 같은 입추일 구간은 한 계군의 이동으로 잇습니다.
+
+**이 저장소는 공개 저장소입니다. 실제 농장 데이터(엑셀, DB)는 커밋하지 않습니다** (`.gitignore`에 `*.xlsx`, `*.db`, `data/`).
+
+## 구조
+
+```
+backend/   FastAPI + SQLAlchemy (개발 SQLite, 운영 PostgreSQL: DATABASE_URL)
+  app/models.py          데이터 모델
+  app/services/          수수 계산, 지표·경고, 계군 조회
+  app/routers/           API
+  app/importers/sayang.py  사양관리 엑셀 이관
+frontend/  Next.js 정적 내보내기(PWA), 농장주 모바일 입력
+docs/      화면 캡처
+```
+
+## 설정
+
+| 환경변수 | 기본값 | 설명 |
+| --- | --- | --- |
+| `DATABASE_URL` | `sqlite:///./bansuk.db` | 운영은 `postgresql+psycopg://...` |
+| `AGE_DAY_BASE` | `1` | 입추일을 몇 일령으로 볼지. 반석 자료마다 0/1이 달라 확정 전까지 설정값 |
+| `CORS_ORIGINS` | `http://localhost:3000` | 프론트엔드 주소 (쉼표로 여러 개) |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | 프론트엔드가 부를 API 주소 |
+
+## 다음 작업
+
+- 반석용 농장 생산 대시보드 (주령 축 계군 비교, 같은 농장 과거 계군 기준선)
+- 농장주 엑셀 업로드 화면 (농장별 매핑 등록)
+- 부검 기록·사진 업로드
+- Alembic 마이그레이션, 배포 환경
