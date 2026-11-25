@@ -87,6 +87,8 @@ class Flock(Base):
     breed: Mapped[str | None] = mapped_column(String(50))  # 예: 갈색, 백색, Hy-Line Brown
     hatchery: Mapped[str | None] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(String(20), default="laying")  # rearing | laying | closed
+    # 적용한 반석 백신프로그램 이름 (없으면 미적용). 2단계에서 vaccine_program 테이블로 연결한다.
+    program_name: Mapped[str | None] = mapped_column(String(100))
 
     locations: Mapped[list[FlockLocation]] = relationship(
         back_populates="flock", order_by="FlockLocation.from_date"
@@ -133,6 +135,25 @@ class AuthToken(Base):
     token: Mapped[str] = mapped_column(String(64), primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("app_user.id"), index=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class IssuedReport(Base):
+    """발행한 정식 보고서. 발행 시점의 계산 결과를 그대로 고정해, 나중에 데이터가 바뀌어도
+    같은 번호의 보고서는 같은 내용을 보여준다 (대외 제출용 신뢰성)."""
+
+    __tablename__ = "issued_report"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    report_no: Mapped[str] = mapped_column(String(40), unique=True)
+    kind: Mapped[str] = mapped_column(String(30), default="flock_performance")
+    farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"), index=True)
+    flock_id: Mapped[int | None] = mapped_column(ForeignKey("flock.id"))
+    params: Mapped[dict] = mapped_column(JSON)
+    payload: Mapped[dict] = mapped_column(JSON)
+    fingerprint: Mapped[str] = mapped_column(String(32))
+    reviewer_note: Mapped[str | None] = mapped_column(Text)
+    issued_by: Mapped[int] = mapped_column(ForeignKey("app_user.id"))
+    issued_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
 
 
 class DailyRecord(Base):

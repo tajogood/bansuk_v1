@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db import Base, engine
-from .routers import auth, daily
+from .routers import auth, daily, reports
 
 
 @asynccontextmanager
@@ -33,3 +33,4 @@ def health():
 
 app.include_router(auth.router)
 app.include_router(daily.router)
+app.include_router(reports.router)
