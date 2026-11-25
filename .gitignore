@@ -1,0 +1,30 @@
+# 실제 농장 데이터는 저장소에 올리지 않는다 (공개 저장소)
+data/
+*.xlsx
+*.xls
+*.csv
+!tools/**/fixtures/*.csv
+
+# DB
+*.db
+*.sqlite3
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# env
+.env
+.env.*
+!.env.example
+
+.DS_Store
