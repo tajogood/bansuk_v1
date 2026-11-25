@@ -1,0 +1,188 @@
+/* 계군 관리 (cases.css의 cs- 클래스를 함께 씀) */
+.fl-body {
+  max-width: 760px;
+}
+.fl-farm {
+  min-height: 44px;
+  margin-bottom: 12px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  background: #fff;
+}
+.fl-title {
+  margin: 18px 0 8px;
+  font-size: 17px;
+}
+.fl-houses,
+.fl-closed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fl-houses li {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.fl-houses li.is-empty {
+  border-style: dashed;
+  background: #fafbfa;
+}
+.fl-house-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fl-house-head strong {
+  font-size: 18px;
+}
+.fl-kind {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--pad);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.fl-flock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+}
+.fl-age {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.fl-flock .dash-tag {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+.fl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+.fl-actions button:not(.link-btn) {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  font-weight: 700;
+  font-size: 14px;
+}
+.fl-empty {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+.fl-empty button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.fl-closed li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.fl-closed li > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fl-closed-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 14px;
+}
+.fl-danger {
+  margin-top: 24px;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+.fl-danger button {
+  display: block;
+  margin-top: 6px;
+}
+.fl-sheet-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(24, 33, 28, 0.4);
+}
+.fl-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(560px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 18px 18px 0 0;
+  background: #fff;
+}
+@media (min-width: 700px) {
+  .fl-sheet-bg {
+    align-items: center;
+  }
+  .fl-sheet {
+    border-radius: 16px;
+  }
+}
+.fl-sheet h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.fl-sheet p {
+  margin: 0;
+}
+.fl-sheet label,
+.fl-sheet fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-weight: 700;
+}
+.fl-sheet legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+.fl-sheet input,
+.fl-sheet select {
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 400;
+  background: #fff;
+  width: 100%;
+}

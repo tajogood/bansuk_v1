@@ -333,6 +333,13 @@ ACTION_LABELS = {
     "login_locked": "로그인 잠김",
     "farm_created": "농장 생성",
     "farm_updated": "농장 수정",
+    "flock_placed": "입추 등록",
+    "flock_updated": "계군 수정",
+    "flock_moved": "계사 이동",
+    "flock_closed": "계군 종료",
+    "flock_reopened": "계군 종료 취소",
+    "flock_move_undone": "계사 이동 취소",
+    "flock_deleted": "계군 삭제",
 }
 
 

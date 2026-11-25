@@ -6,6 +6,8 @@ import type {
   FarmConfigIn,
   Role,
   NecropsyCase,
+  FlockBoard,
+  ManagedFlock,
   NotificationItem,
   CaseResult,
   AnalysisDashboard,
@@ -217,4 +219,19 @@ export const notificationsApi = {
   list: (t: string) => request<{ unread: number; items: NotificationItem[] }>("/api/notifications", {}, t),
   count: (t: string) => request<{ unread: number }>("/api/notifications/count", {}, t),
   readAll: (t: string) => request<{ unread: number }>("/api/notifications/read-all", { method: "POST" }, t),
+};
+
+type FlockRes = { flock: ManagedFlock; linked_records: number };
+export const flocksApi = {
+  board: (t: string, farmId: number) => request<FlockBoard>(`/api/farms/${farmId}/flock-board`, {}, t),
+  place: (t: string, farmId: number, b: { house_id: number; placed_on: string; placed_count: number; breed?: string | null; hatchery?: string | null; name?: string | null }) =>
+    request<FlockRes>(`/api/farms/${farmId}/flocks`, { method: "POST", body: JSON.stringify(b) }, t),
+  edit: (t: string, id: number, b: Partial<{ name: string; placed_on: string; placed_count: number; breed: string; hatchery: string }>) =>
+    request<FlockRes>(`/api/flocks/${id}`, { method: "PATCH", body: JSON.stringify(b) }, t),
+  move: (t: string, id: number, b: { to_house_id: number; date: string; count?: number | null }) =>
+    request<FlockRes>(`/api/flocks/${id}/move`, { method: "POST", body: JSON.stringify(b) }, t),
+  close: (t: string, id: number, b: { date: string; reason: string; note?: string | null }) =>
+    request<FlockRes>(`/api/flocks/${id}/close`, { method: "POST", body: JSON.stringify(b) }, t),
+  undo: (t: string, id: number) => request<FlockRes>(`/api/flocks/${id}/undo`, { method: "POST" }, t),
+  remove: (t: string, id: number) => request<{ ok: boolean }>(`/api/flocks/${id}`, { method: "DELETE" }, t),
 };

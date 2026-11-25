@@ -92,6 +92,9 @@ export default function Home(p: Props) {
       ) : p.tab === "status" ? (
         <>
           <Dashboard token={p.token} farmId={p.farmId} date={p.date} />
+          <a className="report-link" href={`/flocks/?farm=${p.farmId}`}>
+            {t("계군 관리 (입추·이동·출하)")}
+          </a>
           {p.isBansuk && (
             <>
               <a className="report-link" href={`/report/?farm=${p.farmId}`}>
@@ -198,6 +201,12 @@ function InputList(p: Props) {
             <p className="all-done">{t("이 날짜 입력을 모두 마쳤습니다.")}</p>
           )}
         </div>
+      )}
+      {houses.some((h) => !h.flock) && (
+        <a className="flock-hint" href={`/flocks/?farm=${p.farmId}`}>
+          {t("계군이 등록되지 않은 동이 있습니다. 입추를 등록하면 일령과 산란 비교가 나옵니다.")}
+          <strong>{t("입추 등록하기")}</strong>
+        </a>
       )}
     </>
   );

@@ -1103,3 +1103,21 @@ main {
   color: var(--ink-3);
   font-size: 13.5px;
 }
+
+.flock-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--caution-bg);
+  color: var(--caution);
+  font-size: 14px;
+  text-decoration: none;
+}
+.flock-hint strong {
+  font-size: 15px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

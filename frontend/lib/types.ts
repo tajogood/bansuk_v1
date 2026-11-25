@@ -312,3 +312,32 @@ export type NotificationItem = {
   at: string | null;
   read: boolean;
 };
+
+// ---------- 계군 관리 ----------
+export type FlockLoc = { id: number; house_id: number; house: string; kind: string; from: string; to: string | null; start_count: number | null };
+export type ManagedFlock = {
+  id: number;
+  name: string | null;
+  placed_on: string;
+  placed_count: number;
+  breed: string | null;
+  hatchery: string | null;
+  status: "rearing" | "laying" | "closed";
+  closed_on: string | null;
+  close_reason: "shipped" | "culled" | "other" | null;
+  close_note: string | null;
+  program: string | null;
+  age_days: number;
+  current_house: { id: number; name: string; kind: string } | null;
+  locations: FlockLoc[];
+  bird_count: number | null;
+  bird_count_date: string | null;
+  records: number;
+};
+export type FlockBoard = {
+  today: string;
+  houses: { id: number; name: string; kind: string; flock: ManagedFlock | null }[];
+  active: ManagedFlock[];
+  closed: ManagedFlock[];
+  unlinked_records: number;
+};

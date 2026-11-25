@@ -87,7 +87,11 @@ class Flock(Base):
     breed: Mapped[str | None] = mapped_column(String(50))  # 예: 갈색, 백색, Hy-Line Brown
     hatchery: Mapped[str | None] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(String(20), default="laying")  # rearing | laying | closed
-    # 적용한 반석 백신프로그램 이름 (없으면 미적용). 2단계에서 vaccine_program 테이블로 연결한다.
+    closed_on: Mapped[dt.date | None] = mapped_column(Date)
+    close_reason: Mapped[str | None] = mapped_column(String(20))  # shipped(출하) | culled(도태) | other
+    close_note: Mapped[str | None] = mapped_column(String(500))
+    # 적용 중인 백신프로그램 표시 이름 (분석·보고서용 캐시). 실제 적용 이력은 FlockProgram에 있고,
+    # 적용·변경할 때 services.vaccines가 이 값을 함께 고친다. 비어 있으면 미적용.
     program_name: Mapped[str | None] = mapped_column(String(100))
 
     locations: Mapped[list[FlockLocation]] = relationship(

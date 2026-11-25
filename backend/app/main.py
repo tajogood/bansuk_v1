@@ -12,7 +12,7 @@ from .i18n import I18nJSONResponse, http_exception_handler, lang_middleware
 from .bootstrap import ensure_admin
 from .crypto import check_key
 from .db import Base, SessionLocal, engine
-from .routers import admin, analysis, auth, cases, daily, reports
+from .routers import admin, analysis, auth, cases, daily, flocks, reports
 
 
 @asynccontextmanager
@@ -54,6 +54,7 @@ app.include_router(reports.router)
 app.include_router(analysis.router)
 app.include_router(admin.router)
 app.include_router(cases.router)
+app.include_router(flocks.router)
 
 
 # 운영: 빌드한 화면(frontend/out)을 같은 서버에서 내보낸다 (포트 하나, CORS 불필요).
