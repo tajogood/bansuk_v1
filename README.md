@@ -37,7 +37,31 @@
 ## 권한
 
 - 농장주는 로그인하면 자기 농장 데이터만 봅니다 (모든 API가 요청마다 농장 권한을 확인, 다른 농장은 403).
-- 반석 계정(수의사·직원·관리자)은 모든 농장을 봅니다. 정식 보고서 발행은 반석만 할 수 있습니다.
+- 반석 계정(수의사·연구원, 직원, 관리자)은 모든 농장을 봅니다. 정식 보고서 발행과 분석기는 반석만 쓸 수 있습니다.
+- 계정·농장 관리는 반석 관리자만 합니다.
+
+## 계정과 보안
+
+- **가입 기능은 없습니다.** 반석 관리자가 '계정·농장 관리' 화면에서 반석 연구원·직원 계정과 농장 계정을 만들고, 농장과 계사, 농장별 입력 항목도 여기서 정합니다.
+- **처음 서버를 띄우면 관리자 계정 하나가 만들어진 상태로 시작합니다** (관리자가 한 명도 없을 때만). 번호는 `BANSUK_ADMIN_PHONE`, 임시 비밀번호는 `BANSUK_ADMIN_INITIAL_PIN`. 비밀번호를 주지 않으면 서버 로그에 한 번 출력합니다.
+- **임시 비밀번호 → 첫 로그인 때 재설정.** 계정을 만들거나 초기화하면 숫자 6자리 임시 비밀번호가 화면에 한 번만 나옵니다. 7일 안에 로그인해 새 비밀번호를 정해야 하고, 정하기 전에는 다른 API가 모두 막힙니다 (403 `pin_change_required`).
+- 새 비밀번호 규칙: 농장 계정은 숫자 6자리 (휴대폰 숫자 키패드), 같은 숫자 반복·연속 숫자·휴대폰 번호 일부는 불가. 반석 계정은 영문과 숫자를 섞은 8자 이상.
+- **저장 방식**
+  - 비밀번호: scrypt 해시만 저장.
+  - 휴대폰 번호: AES-256-GCM으로 암호화해 저장하고, 로그인 조회는 HMAC 블라인드 인덱스로 합니다. DB만 유출되어서는 번호를 알 수 없습니다.
+  - 로그인 토큰: 원문은 기기에만 있고 DB에는 SHA-256 값만. 농장 휴대폰은 180일, 반석 계정은 30일 유지.
+- 5번 연속 틀리면 10분 잠금 (관리자가 바로 풀 수 있음). 비밀번호를 바꾸거나 초기화하면 다른 기기의 로그인은 끊깁니다.
+- 계정을 끄면 즉시 로그아웃되고, 관리자는 최소 한 명 남아 있어야 합니다.
+- 계정·농장 변경, 비밀번호 설정·초기화, 잠금은 '변경 기록'에 남습니다 (비밀번호 값은 남기지 않음).
+- 암호화 키 `BANSUK_DATA_KEY`는 `python -m app.crypto`로 만듭니다. 운영(`BANSUK_ENV=production`)에서 키가 없으면 서버가 뜨지 않습니다. 키를 잃으면 저장된 번호를 되살릴 수 없으니 따로 보관해야 합니다. 개발에서는 `backend/data/dev-data.key`를 자동으로 만듭니다 (저장소에 올라가지 않음).
+
+<p>
+  <img src="docs/screenshots/login.png" width="220" alt="로그인">
+  <img src="docs/screenshots/set-pin.png" width="220" alt="첫 로그인 비밀번호 정하기">
+</p>
+<img src="docs/screenshots/admin-users.png" width="900" alt="계정 관리">
+<img src="docs/screenshots/admin-temp-pin.png" width="900" alt="임시 비밀번호 안내">
+<img src="docs/screenshots/admin-farm.png" width="900" alt="농장 만들기">
 
 ## 보고서를 믿을 수 있게 만드는 장치
 
@@ -77,7 +101,7 @@ npm install
 npm run dev                        # http://localhost:3000
 ```
 
-데모 계정: 농장주 `010-0000-0000` / PIN `1234`, 반석 `010-1111-1111` / PIN `1234`
+데모 계정 (`python -m app.seed`): 반석 관리자 `010-2222-2222` / `bansuk2026`, 수의사 `010-1111-1111` / `bansuk2026`, 농장주 `010-0000-0000` / `246810`
 
 테스트: `cd backend && python -m pytest`
 
@@ -102,6 +126,9 @@ python -m app.importers.sayang 사양관리현황.xlsx --farm "농장명"       
 ```
 backend/   FastAPI + SQLAlchemy (개발 SQLite, 운영 PostgreSQL: DATABASE_URL)
   app/models.py          데이터 모델
+  app/crypto.py          개인정보 암호화
+  app/security.py        비밀번호·토큰·권한
+  app/bootstrap.py       첫 관리자 생성
   app/services/          수수 계산, 지표·경고, 계군 조회
   app/routers/           API
   app/importers/sayang.py  사양관리 엑셀 이관
@@ -117,10 +144,16 @@ docs/      화면 캡처
 | `AGE_DAY_BASE` | `1` | 입추일을 몇 일령으로 볼지. 반석 자료마다 0/1이 달라 확정 전까지 설정값 |
 | `CORS_ORIGINS` | `http://localhost:3000` | 프론트엔드 주소 (쉼표로 여러 개) |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | 프론트엔드가 부를 API 주소 |
+| `BANSUK_DATA_KEY` | (개발: 자동 생성) | 개인정보 암호화 키, 32바이트 base64. 운영 필수 |
+| `BANSUK_ENV` | | `production`이면 키가 없을 때 서버를 띄우지 않음 |
+| `BANSUK_ADMIN_PHONE` | `010-9999-9999` | 처음 만드는 관리자 번호 |
+| `BANSUK_ADMIN_NAME` | `반석 관리자` | 처음 만드는 관리자 이름 |
+| `BANSUK_ADMIN_INITIAL_PIN` | (자동 생성, 로그 출력) | 처음 만드는 관리자의 임시 비밀번호 |
 
 ## 다음 작업
 
 - 분석기 데이터원 확장: 검사 결과(항체가·PCR), 부검 기록, 백신 접종 이력
 - 농장주 엑셀 업로드 화면 (농장별 매핑 등록)
+- 기존 개발 DB는 계정 구조가 바뀌어 다시 만들어야 함 (`python -m app.seed`). 운영 전 Alembic으로 전환
 - 부검 기록·사진 업로드
 - Alembic 마이그레이션, 배포 환경

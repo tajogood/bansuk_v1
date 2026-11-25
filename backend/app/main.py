@@ -4,14 +4,19 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .db import Base, engine
-from .routers import analysis, auth, daily, reports
+from .bootstrap import ensure_admin
+from .crypto import check_key
+from .db import Base, SessionLocal, engine
+from .routers import admin, analysis, auth, daily, reports
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     # 1단계에서는 create_all로 시작하고, 운영 전환 시 Alembic 마이그레이션으로 바꾼다.
+    check_key()
     Base.metadata.create_all(engine)
+    with SessionLocal() as db:
+        ensure_admin(db)
     yield
 
 
@@ -35,3 +40,4 @@ app.include_router(auth.router)
 app.include_router(daily.router)
 app.include_router(reports.router)
 app.include_router(analysis.router)
+app.include_router(admin.router)

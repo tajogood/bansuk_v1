@@ -128,11 +128,66 @@ export type Dashboard = {
 };
 
 export type Farm = { id: number; name: string; region: string | null };
+export type PinRule = { kind: "digits6" | "password"; text: string };
+
+export type SessionUser = {
+  id: number;
+  name: string;
+  role: string;
+  role_label: string;
+  must_change_pin: boolean;
+  pin_rule: PinRule;
+};
+
 export type Session = {
   token: string;
-  user: { id: number; name: string; role: string };
+  user: SessionUser;
   farms: Farm[];
 };
+
+// ---------- 반석 관리자 ----------
+export type Role = "admin" | "bansuk_vet" | "bansuk_staff" | "farm_owner";
+export type AccountStatus = "active" | "temp" | "expired" | "locked" | "inactive";
+
+export type AdminUser = {
+  id: number;
+  name: string;
+  phone: string;
+  role: Role;
+  role_label: string;
+  farm_ids: number[];
+  status: AccountStatus;
+  last_login_at: string | null;
+  temp_expires_at: string | null;
+  created_at: string | null;
+};
+
+export type AdminHouse = { id?: number; name: string; kind: "laying" | "rearing"; active: boolean };
+
+export type FarmConfigIn = {
+  egg_unit: "tray" | "egg";
+  eggs_per_tray: number;
+  grades: string[];
+  show_feed: boolean;
+  show_water: boolean;
+  show_temp: boolean;
+  show_humidity: boolean;
+  show_egg_weight: boolean;
+  show_cull: boolean;
+};
+
+export type AdminFarm = {
+  id: number;
+  name: string;
+  region: string | null;
+  contract_type: "program" | "test_only";
+  active: boolean;
+  houses: AdminHouse[];
+  accounts: { id: number; name: string }[];
+  config: FarmConfigIn | null;
+};
+
+export type AuditItem = { at: string | null; actor: string; action: string; target: string };
 
 // ---------- 반석 데이터 분석기 ----------
 export type AnalysisQuery = {

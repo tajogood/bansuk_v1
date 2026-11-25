@@ -150,6 +150,50 @@ main {
   letter-spacing: 0.04em;
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--barn);
+  font-size: 15px;
+}
+.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--barn);
+  color: var(--yolk);
+  font-size: 12px;
+  letter-spacing: -0.04em;
+}
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.link-btn {
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  color: var(--barn);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.link-btn.center {
+  align-self: center;
+}
+.login-help {
+  margin: 0 !important;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
 /* ---------- 홈: 동 목록 ---------- */
 .home {
   padding: 8px 16px calc(110px + var(--safe-bottom));

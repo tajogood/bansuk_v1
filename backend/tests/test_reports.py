@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import DailyRecord, Farm, Flock, FlockLocation, House, User, UserFarm  # noqa: E402
-from app.security import hash_pin  # noqa: E402
+from tests.helpers import make_user  # noqa: E402
 
 TODAY = dt.date.today()
 
@@ -45,8 +45,8 @@ def client():
     for k, lvl in enumerate([0.80, 0.83, 0.85, 0.86]):
         _flock(db, farm, h, base + dt.timedelta(days=400 * k), 60, lambda a, lvl=lvl: lvl)
     target = _flock(db, farm, h, TODAY - dt.timedelta(days=210), 60, lambda a: 0.92, program="반석 프로그램")
-    owner = User(name="농장주", phone="01000000000", pin_hash=hash_pin("1234"), role="farm_owner")
-    vet = User(name="수의사", phone="01011111111", pin_hash=hash_pin("1234"), role="bansuk_vet")
+    owner = make_user("농장주", "01000000000", "farm_owner")
+    vet = make_user("수의사", "01011111111", "bansuk_vet")
     db.add_all([owner, vet])
     db.flush()
     db.add(UserFarm(user_id=owner.id, farm_id=farm.id))

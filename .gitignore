@@ -28,3 +28,6 @@ next-env.d.ts
 !.env.example
 
 .DS_Store
+
+# 암호화 키
+*.key

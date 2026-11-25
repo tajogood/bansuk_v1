@@ -18,8 +18,11 @@ def client():
         yield c
 
 
+PINS = {"01000000000": "246810", "01011111111": "bansuk2026"}
+
+
 def auth(c, phone):
-    return {"Authorization": "Bearer " + c.post("/api/auth/login", json={"phone": phone, "pin": "1234"}).json()["token"]}
+    return {"Authorization": "Bearer " + c.post("/api/auth/login", json={"phone": phone, "pin": PINS[phone]}).json()["token"]}
 
 
 def test_farm_owner_cannot_use_analyzer(client):

@@ -111,15 +111,42 @@ class FlockLocation(Base):
 
 
 class User(Base):
+    """계정. 휴대폰 번호는 암호화해 저장하고(phone_enc), 로그인 조회는 블라인드 인덱스(phone_idx)로 한다.
+    비밀번호는 scrypt 해시만 저장한다."""
+
     __tablename__ = "app_user"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50))
-    phone: Mapped[str] = mapped_column(String(20), unique=True)
+    phone_enc: Mapped[str] = mapped_column(String(200))
+    phone_idx: Mapped[str] = mapped_column(String(64), unique=True)
     pin_hash: Mapped[str] = mapped_column(String(200))
-    # farm_owner | bansuk_vet | bansuk_staff | admin
+    # admin(반석 관리자) | bansuk_vet(수의사·연구원) | bansuk_staff(반석 직원) | farm_owner(농장)
     role: Mapped[str] = mapped_column(String(20), default="farm_owner")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # 관리자가 만든 임시 비밀번호 상태. 첫 로그인에서 새 비밀번호를 정해야 다른 화면을 쓸 수 있다.
+    must_change_pin: Mapped[bool] = mapped_column(Boolean, default=True)
+    temp_expires_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
+    failed_count: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[dt.datetime | None] = mapped_column(DateTime)
+    last_login_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
+    pin_changed_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+
+    @property
+    def phone(self) -> str:
+        from .crypto import decrypt
+
+        return decrypt(self.phone_enc)
+
+    def set_phone(self, phone: str) -> None:
+        from .crypto import blind_index, encrypt
+        from .security import normalize_phone
+
+        p = normalize_phone(phone)
+        self.phone_enc = encrypt(p)
+        self.phone_idx = blind_index(p)
 
 
 class UserFarm(Base):
@@ -130,11 +157,28 @@ class UserFarm(Base):
 
 
 class AuthToken(Base):
+    """로그인 토큰. 토큰 원문은 기기에만 있고 DB에는 SHA-256 값만 둔다."""
+
     __tablename__ = "auth_token"
 
-    token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("app_user.id"), index=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+    expires_at: Mapped[dt.datetime] = mapped_column(DateTime)
+
+
+class AuditLog(Base):
+    """계정·농장 관리 기록 (누가 언제 무엇을 바꿨는지). 비밀번호 값은 남기지 않는다."""
+
+    __tablename__ = "audit_log"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+    actor_id: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    action: Mapped[str] = mapped_column(String(40))
+    target_user_id: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    target_farm_id: Mapped[int | None] = mapped_column(ForeignKey("farm.id"))
+    detail: Mapped[dict | None] = mapped_column(JSON)
 
 
 class IssuedReport(Base):

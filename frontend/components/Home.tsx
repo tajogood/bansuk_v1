@@ -9,6 +9,7 @@ type Props = {
   onTab: (t: "input" | "status") => void;
   token: string;
   isBansuk: boolean;
+  isAdmin?: boolean;
   day: DayView | null;
   date: string;
   farms: Farm[];
@@ -85,6 +86,11 @@ export default function Home(p: Props) {
               <a className="report-link" href="/analysis/">
                 데이터 분석기 열기
               </a>
+              {p.isAdmin && (
+                <a className="report-link" href="/admin/">
+                  계정·농장 관리
+                </a>
+              )}
             </>
           )}
         </>

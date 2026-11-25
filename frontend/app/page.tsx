@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Home from "@/components/Home";
 import HouseEntry from "@/components/HouseEntry";
 import Login from "@/components/Login";
+import SetPin from "@/components/SetPin";
 import { api, ApiError, loadSession, saveSession } from "@/lib/api";
 import { todayISO } from "@/lib/format";
 import { enqueue, flush, isNetworkError, pending } from "@/lib/queue";
@@ -26,6 +27,15 @@ export default function Page() {
   const [toast, setToast] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [tab, setTab] = useState<"input" | "status">("input");
+  const [tempPin, setTempPin] = useState<string | null>(null);
+
+  const signOut = useCallback((s: Session | null) => {
+    if (s) api.logout(s.token).catch(() => {});
+    saveSession(null);
+    setSession(null);
+    setDay(null);
+    setTempPin(null);
+  }, []);
 
   // 시작: 저장된 로그인 불러오기
   useEffect(() => {
@@ -58,6 +68,10 @@ export default function Page() {
       if (e instanceof ApiError && e.status === 401) {
         saveSession(null);
         setSession(null);
+        return;
+      }
+      if (e instanceof ApiError && e.code === "pin_change_required" && session) {
+        setSession({ ...session, user: { ...session.user, must_change_pin: true } });
         return;
       }
       setError(isNetworkError(e) ? "연결이 안 됩니다. 전파가 닿는 곳에서 다시 불러와 주세요." : (e as Error).message);
@@ -157,11 +171,27 @@ export default function Page() {
   if (!session)
     return (
       <Login
-        onLogin={(s) => {
+        onLogin={(s, pin) => {
           saveSession(s);
           setSession(s);
+          setTempPin(s.user.must_change_pin ? pin : null);
           setFarmId(s.farms[0]?.id ?? null);
         }}
+      />
+    );
+  if (session.user.must_change_pin)
+    return (
+      <SetPin
+        session={session}
+        tempPin={tempPin}
+        onDone={(s) => {
+          saveSession(s);
+          setSession(s);
+          setTempPin(null);
+          setFarmId(s.farms[0]?.id ?? null);
+          showToast("비밀번호를 정했습니다");
+        }}
+        onCancel={() => signOut(session)}
       />
     );
 
@@ -198,11 +228,8 @@ export default function Page() {
           onFarm={setFarmId}
           onOpen={open}
           onRetry={load}
-          onLogout={() => {
-            saveSession(null);
-            setSession(null);
-            setDay(null);
-          }}
+          isAdmin={session.user.role === "admin"}
+          onLogout={() => signOut(session)}
         />
       )}
 

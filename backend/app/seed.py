@@ -115,9 +115,18 @@ def seed(reset: bool = True, days: int = 45) -> None:
     db.flush()
     db.add(FlockLocation(flock_id=rf.id, house_id=rear.id, from_date=rf.placed_on, start_count=110000))
 
-    owner = User(name="데모 농장주", phone="01000000000", pin_hash=hash_pin("1234"), role="farm_owner")
-    vet = User(name="데모 수의사", phone="01011111111", pin_hash=hash_pin("1234"), role="bansuk_vet")
-    db.add_all([owner, vet])
+    # 데모 계정: 이미 첫 비밀번호를 정한 상태로 만든다 (관리자는 임시 비밀번호 흐름을 보여주려고 그대로 둠)
+    demo = []
+    for name, phone, role, pin in (
+        ("데모 관리자", "01022222222", "admin", "bansuk2026"),
+        ("데모 수의사", "01011111111", "bansuk_vet", "bansuk2026"),
+        ("데모 농장주", "01000000000", "farm_owner", "246810"),
+    ):
+        u = User(name=name, role=role, pin_hash=hash_pin(pin), must_change_pin=False)
+        u.set_phone(phone)
+        demo.append(u)
+    owner, vet = demo[2], demo[1]
+    db.add_all(demo)
     db.flush()
     db.add(UserFarm(user_id=owner.id, farm_id=farm.id))
 
