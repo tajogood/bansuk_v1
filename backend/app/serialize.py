@@ -35,4 +35,5 @@ def config_dict(farm: Farm) -> dict:
         "show_temp": c.show_temp if c else True,
         "show_humidity": c.show_humidity if c else True,
         "show_egg_weight": c.show_egg_weight if c else False,
+        "show_cull": c.show_cull if c else False,
     }

@@ -66,15 +66,13 @@ def warnings(r: DailyRecord, history: list[DailyRecord]) -> list[dict]:
     if cur_mort is not None and len(past_mort) >= 5:
         med = statistics.median(past_mort)
         if cur_mort >= MORTALITY_MIN_PER_10K and cur_mort >= med * MORTALITY_MULTIPLIER:
-            out.append(
-                {
-                    "level": "warning",
-                    "code": "mortality_spike",
-                    "message": f"폐사가 평소(1만 수당 {med:.1f})의 {cur_mort / med:.1f}배입니다."
-                    if med > 0
-                    else "폐사가 평소보다 많습니다.",
-                }
-            )
+            # 농장주가 바로 이해하도록 마릿수로 말한다
+            usual = statistics.median([h.mortality for h in history[-14:] if h.mortality is not None])
+            if usual > 0:
+                msg = f"폐사 {r.mortality}수. 평소 하루 약 {usual:.0f}수의 {r.mortality / usual:.0f}배입니다."
+            else:
+                msg = f"폐사 {r.mortality}수. 평소보다 많습니다."
+            out.append({"level": "warning", "code": "mortality_spike", "message": msg})
 
     # 산란 하락
     past_lay = [x["lay_rate"] for x in hm[-7:] if x["lay_rate"] is not None and x["lay_rate"] <= 100]

@@ -56,6 +56,7 @@ class FarmInputConfig(Base):
     show_temp: Mapped[bool] = mapped_column(Boolean, default=True)
     show_humidity: Mapped[bool] = mapped_column(Boolean, default=True)
     show_egg_weight: Mapped[bool] = mapped_column(Boolean, default=False)
+    show_cull: Mapped[bool] = mapped_column(Boolean, default=False)  # 도태: 거의 안 쓰는 농장이 많음
 
     farm: Mapped[Farm] = relationship(back_populates="config")
 
