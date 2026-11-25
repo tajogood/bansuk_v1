@@ -156,3 +156,7 @@
   margin: 18px 0 8px;
   font-size: 17px;
 }
+.up-houses td.cs-muted {
+  white-space: nowrap;
+  font-size: 13px;
+}

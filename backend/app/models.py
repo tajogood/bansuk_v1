@@ -403,3 +403,91 @@ class ImportChange(Base):
     record_id: Mapped[int] = mapped_column(Integer, index=True)
     action: Mapped[str] = mapped_column(String(10))  # created | updated
     before: Mapped[dict | None] = mapped_column(JSON)
+
+
+# ---------------------------------------------------------------------------
+# 백신 프로그램
+# ---------------------------------------------------------------------------
+
+class Vaccine(Base):
+    """백신 마스터. 혼합백신은 components에 성분(대상 질병·균주)을 여러 개 적는다."""
+
+    __tablename__ = "vaccine"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))
+    maker: Mapped[str | None] = mapped_column(String(100))
+    kind: Mapped[str] = mapped_column(String(20), default="live")  # live | inactivated | vector | other
+    route: Mapped[str] = mapped_column(String(20), default="spray")  # 기본 접종 경로
+    components: Mapped[list] = mapped_column(JSON, default=list)  # [{"disease": "nd", "strain": "La Sota"}]
+    note: Mapped[str | None] = mapped_column(Text)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class VaccineProgram(Base):
+    """백신 프로그램 (버전 관리). 계군에 적용된 프로그램은 고치지 않고 새 버전으로 만든다."""
+
+    __tablename__ = "vaccine_program"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    based_on_id: Mapped[int | None] = mapped_column(ForeignKey("vaccine_program.id"))
+    description: Mapped[str | None] = mapped_column(Text)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+
+    @property
+    def label(self) -> str:
+        return f"{self.name} v{self.version}"
+
+
+class ProgramItem(Base):
+    """프로그램의 접종 항목: 몇 일령에 어떤 백신을 어떤 경로로."""
+
+    __tablename__ = "program_item"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    program_id: Mapped[int] = mapped_column(ForeignKey("vaccine_program.id"), index=True)
+    age_days: Mapped[int] = mapped_column(Integer)
+    vaccine_id: Mapped[int] = mapped_column(ForeignKey("vaccine.id"))
+    route: Mapped[str | None] = mapped_column(String(20))  # 없으면 백신 기본 경로
+    note: Mapped[str | None] = mapped_column(String(300))
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class FlockProgram(Base):
+    """계군에 프로그램을 적용한 기간 (변경 이력). to_date가 비어 있으면 지금 적용 중."""
+
+    __tablename__ = "flock_program"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    flock_id: Mapped[int] = mapped_column(ForeignKey("flock.id"), index=True)
+    program_id: Mapped[int | None] = mapped_column(ForeignKey("vaccine_program.id"))  # None = 프로그램 중단
+    from_date: Mapped[dt.date] = mapped_column(Date)
+    to_date: Mapped[dt.date | None] = mapped_column(Date)
+    reason: Mapped[str | None] = mapped_column(String(500))
+    set_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    set_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Vaccination(Base):
+    """실제 접종 기록 (반석이 직접 접종)."""
+
+    __tablename__ = "vaccination"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    flock_id: Mapped[int] = mapped_column(ForeignKey("flock.id"), index=True)
+    house_id: Mapped[int | None] = mapped_column(ForeignKey("house.id"))
+    date: Mapped[dt.date] = mapped_column(Date, index=True)
+    vaccine_id: Mapped[int] = mapped_column(ForeignKey("vaccine.id"))
+    route: Mapped[str | None] = mapped_column(String(20))
+    birds: Mapped[int | None] = mapped_column(Integer)
+    lot: Mapped[str | None] = mapped_column(String(60))
+    program_item_id: Mapped[int | None] = mapped_column(ForeignKey("program_item.id"))  # 프로그램 항목에 따른 접종
+    performed_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    note: Mapped[str | None] = mapped_column(String(500))
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())

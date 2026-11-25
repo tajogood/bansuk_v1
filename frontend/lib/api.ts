@@ -7,6 +7,11 @@ import type {
   Role,
   NecropsyCase,
   FlockBoard,
+  VaccineItem,
+  ProgramSummary,
+  ProgramItemRow,
+  FlockVaccination,
+  DueRow,
   ImportBatchItem,
   ManagedFlock,
   NotificationItem,
@@ -275,4 +280,25 @@ export const importsApi = {
     a.click();
     URL.revokeObjectURL(url);
   },
+};
+
+type ProgramIn = { name: string; description?: string | null; active?: boolean; items: Omit<ProgramItemRow, "id" | "vaccine" | "kind" | "default_route">[] };
+type VaccineIn = Omit<VaccineItem, "id">;
+const json = (method: string, body: object) => ({ method, body: JSON.stringify(body) });
+export const vaccinesApi = {
+  vaccines: (t: string) => request<{ vaccines: VaccineItem[] }>("/api/vaccines", {}, t),
+  createVaccine: (t: string, b: VaccineIn) => request<VaccineItem>("/api/vaccines", json("POST", b), t),
+  updateVaccine: (t: string, id: number, b: VaccineIn) => request<VaccineItem>(`/api/vaccines/${id}`, json("PUT", b), t),
+  programs: (t: string) => request<{ programs: ProgramSummary[] }>("/api/programs", {}, t),
+  program: (t: string, id: number) => request<ProgramSummary>(`/api/programs/${id}`, {}, t),
+  createProgram: (t: string, b: ProgramIn) => request<ProgramSummary>("/api/programs", json("POST", b), t),
+  updateProgram: (t: string, id: number, b: ProgramIn) => request<ProgramSummary>(`/api/programs/${id}`, json("PUT", b), t),
+  newVersion: (t: string, id: number, b: ProgramIn) => request<ProgramSummary>(`/api/programs/${id}/new-version`, json("POST", b), t),
+  flock: (t: string, flockId: number) => request<FlockVaccination>(`/api/flocks/${flockId}/vaccination`, {}, t),
+  assign: (t: string, flockId: number, b: { program_id: number | null; from_date: string; reason?: string | null }) =>
+    request<FlockVaccination>(`/api/flocks/${flockId}/program`, json("POST", b), t),
+  record: (t: string, flockId: number, b: { date: string; vaccine_id: number; route?: string | null; birds?: number | null; lot?: string | null; program_item_id?: number | null; note?: string | null }) =>
+    request<FlockVaccination>(`/api/flocks/${flockId}/vaccinations`, json("POST", b), t),
+  removeRecord: (t: string, id: number) => request<FlockVaccination>(`/api/vaccinations/${id}`, { method: "DELETE" }, t),
+  due: (t: string, days = 14) => request<{ items: DueRow[]; today: string }>(`/api/vaccination/due?days=${days}`, {}, t),
 };

@@ -369,3 +369,30 @@ export type ImportBatchItem = {
   reverted_at: string | null;
   reverted_by: string | null;
 };
+
+// ---------- 백신 프로그램 ----------
+export type VaccineComponent = { disease: string; strain?: string | null };
+export type VaccineItem = { id: number; name: string; maker: string | null; kind: string; route: string; components: VaccineComponent[]; note: string | null; active: boolean };
+export type ProgramItemRow = { id?: number; age_days: number; vaccine_id: number; vaccine?: string; kind?: string | null; route: string | null; default_route?: string | null; note: string | null };
+export type ProgramSummary = { id: number; name: string; version: number; label: string; based_on_id: number | null; description: string | null; active: boolean; flocks: number; item_count: number; items?: ProgramItemRow[] };
+export type ScheduleRow = {
+  item_id: number;
+  program: string;
+  age_days: number;
+  planned: string;
+  vaccine: { id: number; name: string; kind: string; components: VaccineComponent[] } | null;
+  route: string | null;
+  note: string | null;
+  status: "done" | "overdue" | "due" | "upcoming";
+  done: { id: number; date: string; lot: string | null } | null;
+};
+export type VaccinationRow = { id: number; date: string; vaccine: { id: number; name: string; kind: string } | null; route: string | null; birds: number | null; lot: string | null; program_item_id: number | null; performed_by: string | null; house: string | null; note: string | null };
+export type FlockVaccination = {
+  flock: { id: number; name: string | null; placed_on: string; placed_count: number; status: string; age_days: number; farm: { id: number; name: string } | null; closed_on: string | null };
+  current: { program_id: number | null; label: string | null; from: string } | null;
+  history: { id: number; program_id: number | null; label: string | null; from: string; to: string | null; reason: string | null; set_by: string | null }[];
+  schedule: ScheduleRow[];
+  vaccinations: VaccinationRow[];
+  can_edit: boolean;
+};
+export type DueRow = ScheduleRow & { flock_id: number; farm: { id: number; name: string }; house: string | null; placed_on: string };

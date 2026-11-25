@@ -1,0 +1,286 @@
+/* 백신 프로그램·접종 (cases.css, flocks.css 함께 씀) */
+.vx-body {
+  max-width: 860px;
+}
+.vx-tabs {
+  padding: 0 16px;
+}
+.ad-tabs {
+  display: flex;
+  gap: 4px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+.ad-tabs button {
+  min-height: 46px;
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.ad-tabs button[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--barn);
+}
+.vx-head h2 {
+  margin: 2px 0 8px;
+  font-size: 26px;
+}
+.vx-head p {
+  margin: 0;
+}
+.vx-program {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 6px 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #e3f1e9;
+}
+.vx-program span {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.vx-program strong {
+  font-size: 17px;
+  color: var(--barn);
+}
+.vx-toggle {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500 !important;
+}
+.vx-toggle input {
+  width: 18px;
+  height: 18px;
+  min-height: 0 !important;
+  accent-color: var(--barn);
+}
+.vx-schedule {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.vx-schedule li {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 2px;
+  border-bottom: 1px solid #edf1ee;
+}
+.vx-schedule li.st-done {
+  color: var(--ink-3);
+}
+.vx-when {
+  display: flex;
+  flex-direction: column;
+  font-variant-numeric: tabular-nums;
+}
+.vx-when span {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.vx-what {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  font-size: 14px;
+}
+.vx-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.vx-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.vb-done {
+  background: #e3f1e9;
+  color: var(--barn);
+}
+.vb-overdue {
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+.vb-due {
+  background: var(--caution-bg);
+  color: var(--caution);
+}
+.vb-upcoming {
+  background: #eef0ee;
+  color: var(--ink-3);
+}
+.vx-do {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1.5px solid var(--barn);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--barn);
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+  display: inline-grid;
+  place-items: center;
+}
+.vx-records td span {
+  display: block;
+}
+.vx-records th {
+  width: 96px;
+  font-variant-numeric: tabular-nums;
+}
+.vx-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+.vx-history li {
+  display: flex;
+  flex-direction: column;
+}
+.vx-days {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.vx-days button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.vx-days button[aria-pressed="true"] {
+  border-color: var(--barn);
+  background: var(--barn);
+  color: #fff;
+}
+.vx-group h2 {
+  margin: 18px 0 4px;
+  font-size: 17px;
+}
+.vx-group h2 span {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.vx-new {
+  max-width: 320px;
+  margin-bottom: 14px;
+}
+.vx-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.vx-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.vx-list li.is-off {
+  opacity: 0.6;
+}
+.vx-list li > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 14px;
+}
+.vx-list li > div strong {
+  font-size: 16px;
+}
+.vx-list button {
+  flex: none;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.vx-editor {
+  width: min(820px, 100%);
+}
+.vx-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.vx-item {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+@media (max-width: 760px) {
+  .vx-item {
+    grid-template-columns: 1fr 1fr;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+}
+.vx-age {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+}
+.vx-age input {
+  width: 48px !important;
+  padding: 0 6px !important;
+  text-align: center;
+}
+.vx-item select,
+.vx-item input:not(.vx-age input),
+.vx-comp select,
+.vx-comp input {
+  min-height: 42px;
+}
+.vx-comp {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+.vx-when span,
+.vx-records th,
+.vx-history .cs-muted {
+  white-space: nowrap;
+}

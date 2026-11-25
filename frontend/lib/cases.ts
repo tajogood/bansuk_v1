@@ -86,6 +86,9 @@ export const DISEASES: Opt[] = [
   { code: "egg_peritonitis", label: k("난황성 복막염") },
   { code: "red_mite", label: k("닭진드기") },
   { code: "heat_stress", label: k("열 스트레스") },
+  { code: "ibd", label: k("전염성 F낭병 (감보로)") },
+  { code: "ae", label: k("조류뇌척수염") },
+  { code: "coryza", label: k("전염성 코라이자") },
 ];
 
 export const SAMPLES: Opt[] = [

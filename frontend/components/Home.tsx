@@ -103,6 +103,9 @@ export default function Home(p: Props) {
               <a className="report-link" href="/analysis/">
                 {t("데이터 분석기 열기")}
               </a>
+              <a className="report-link" href="/vaccines/">
+                {t("백신 프로그램·접종 일정")}
+              </a>
               {p.isAdmin && (
                 <a className="report-link" href="/admin/">
                   {t("계정·농장 관리")}

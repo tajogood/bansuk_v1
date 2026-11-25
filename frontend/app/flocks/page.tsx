@@ -300,6 +300,9 @@ export default function FlocksPage() {
                           <button type="button" onClick={() => setSheet({ kind: "edit", flock: h.flock! })}>
                             {t("고치기")}
                           </button>
+                          <a className="fl-vx" href={`/vaccination/?flock=${h.flock.id}`}>
+                            {t("백신 접종")}
+                          </a>
                           {h.flock.locations.length > 1 && (
                             <button
                               type="button"
@@ -340,6 +343,9 @@ export default function FlocksPage() {
                       <div className="fl-closed-actions">
                         <a className="link-btn" href={`/report/?farm=${farmId}&flock=${f.id}`}>
                           {t("보고서")}
+                        </a>
+                        <a className="link-btn" href={`/vaccination/?flock=${f.id}`}>
+                          {t("백신 접종")}
                         </a>
                         <button type="button" className="link-btn" onClick={() => act(() => flocksApi.undo(session.token, f.id), t("종료를 취소했습니다"))}>
                           {t("종료 취소")}

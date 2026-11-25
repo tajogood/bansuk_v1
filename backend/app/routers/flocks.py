@@ -332,8 +332,11 @@ def delete_flock(flock_id: int, user: User = Depends(current_user), db: Session 
         db.delete(l)
     db.flush()
     db.query(DailyRecord).filter(DailyRecord.flock_id == f.id).update({DailyRecord.flock_id: None}, synchronize_session=False)
-    from ..models import NecropsyCase
+    from ..models import FlockProgram, NecropsyCase, Vaccination
 
+    if db.query(Vaccination).filter(Vaccination.flock_id == f.id).first():
+        raise HTTPException(400, "접종 기록이 있는 계군은 지울 수 없습니다")
+    db.query(FlockProgram).filter(FlockProgram.flock_id == f.id).delete(synchronize_session=False)
     db.query(NecropsyCase).filter(NecropsyCase.flock_id == f.id).update({NecropsyCase.flock_id: None}, synchronize_session=False)
     farm_id = f.farm_id
     db.delete(f)

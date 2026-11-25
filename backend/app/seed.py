@@ -90,7 +90,6 @@ def seed(reset: bool = True, days: int = 45) -> None:
             placed_count=105000,
             breed="갈색",
             status="laying",
-            program_name="반석 산란계 프로그램" if name == "3동" else None,
         )
         db.add(fl)
         db.flush()
@@ -141,7 +140,7 @@ def seed(reset: bool = True, days: int = 45) -> None:
             eggs = int(count * rate)
             split = _grade_split(age)
             trays = {g: round(eggs * s / 30) * 30 for g, s in split.items()}
-            feed = round(count * rnd.gauss(0.118 if fl.program_name is None else 0.121, 0.003), -1)
+            feed = round(count * rnd.gauss(0.121 if (h.name == "3동" and fl.status != "closed") else 0.118, 0.003), -1)
             db.add(
                 DailyRecord(
                     farm_id=farm.id,
@@ -163,6 +162,7 @@ def seed(reset: bool = True, days: int = 45) -> None:
             day += dt.timedelta(days=1)
     db.commit()
     _seed_cases(db, farm, owner, vet, today)
+    _seed_vaccines(db, farm, vet, today)
     print(f"데모 데이터 생성 완료: {DEMO_FARM}, 계군 {len(houses) + 1}개 (동마다 과거 계군 3개 포함)")
 
 
@@ -265,6 +265,53 @@ def _seed_cases(db, farm, owner, vet, today) -> None:
     ])
     add_photos(c3, "necropsy", 4, vet)
     db.commit()
+
+
+def _seed_vaccines(db, farm, vet, today) -> None:
+    """데모 백신·프로그램 (제품명은 예시). 3동 프로그램 계군에 적용하고 지난 접종을 기록한다."""
+    from .models import Flock, FlockLocation, House, ProgramItem, Vaccination, Vaccine, VaccineProgram
+    from .services.vaccines import assign, planned_date
+
+    def vac(name, kind, route, comps):
+        v = Vaccine(name=name, maker="예시제약", kind=kind, route=route, components=[{"disease": d, "strain": s_} for d, s_ in comps])
+        db.add(v)
+        db.flush()
+        return v
+
+    ndib = vac("ND+IB 생독", "live", "spray", [("nd", "La Sota"), ("ib", "H120")])
+    ibd = vac("IBD 생독 (중간형)", "live", "drinking", [("ibd", None)])
+    pox = vac("계두 생독", "live", "wing_web", [("fowl_pox", None)])
+    ilt = vac("ILT 생독", "live", "eye_drop", [("ilt", None)])
+    mg = vac("MG 생독", "live", "eye_drop", [("mg_ms", "ts-11")])
+    kill4 = vac("ND+IB+EDS+AI 사독", "inactivated", "injection_im", [("nd", None), ("ib", None), ("eds", None), ("lpai", "H9N2")])
+    coryza = vac("코라이자 사독", "inactivated", "injection_im", [("coryza", None)])
+    nd = vac("ND 생독 (부스터)", "live", "spray", [("nd", "Clone 30")])
+
+    prog = VaccineProgram(name="반석 산란계 프로그램", version=1, created_by=vet.id,
+                          description="산란계 기본 프로그램 (데모). 산란기에는 6주마다 ND 부스터.")
+    db.add(prog)
+    db.flush()
+    plan = [(7, ndib), (14, ibd), (21, ndib), (28, ibd), (42, ndib), (56, pox), (63, ilt), (70, ndib), (84, mg),
+            (98, ndib), (112, kill4), (119, coryza), (126, ndib), (161, nd), (203, nd), (245, nd), (287, nd)]
+    items = []
+    for i, (age, v) in enumerate(plan):
+        it = ProgramItem(program_id=prog.id, age_days=age, vaccine_id=v.id, sort_order=i)
+        db.add(it)
+        items.append(it)
+    db.flush()
+
+    house3 = db.query(House).filter_by(farm_id=farm.id, name="3동").one()
+    loc = db.query(FlockLocation).filter(FlockLocation.house_id == house3.id, FlockLocation.to_date.is_(None)).first()
+    flock = db.get(Flock, loc.flock_id)
+    assign(db, flock, prog, flock.placed_on, "데모 기본 적용", vet.id)
+    for it in items:
+        day = planned_date(flock, it.age_days)
+        if day >= today - dt.timedelta(days=12):
+            continue  # 최근 항목 하나는 밀린 것으로 남겨 둔다
+        db.add(Vaccination(flock_id=flock.id, house_id=house3.id, date=day, vaccine_id=it.vaccine_id, program_item_id=it.id,
+                           birds=flock.placed_count, lot=f"L{day:%y%m}{it.age_days:03d}", performed_by=vet.id, created_by=vet.id))
+    db.commit()
+
 
 
 if __name__ == "__main__":
