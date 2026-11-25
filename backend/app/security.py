@@ -84,8 +84,8 @@ def _too_simple_digits(p: str) -> bool:
 
 def pin_rule(role: str) -> dict:
     if role in BANSUK_ROLES:
-        return {"kind": "password", "text": "영문과 숫자를 섞어 8자 이상"}
-    return {"kind": "digits6", "text": "숫자 6자리"}
+        return {"kind": "password", "rule": "영문과 숫자를 섞어 8자 이상"}
+    return {"kind": "digits6", "rule": "숫자 6자리"}
 
 
 def check_new_pin(user: User, new: str) -> str | None:

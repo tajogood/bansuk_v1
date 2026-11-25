@@ -1,14 +1,16 @@
 "use client";
 
 import Dashboard from "./Dashboard";
+import HomeCases from "./HomeCases";
 import LangToggle from "./LangToggle";
+import NotificationBell from "./NotificationBell";
 import { useT } from "@/lib/i18n";
 import { dateLabel, num, relDay, shiftISO, todayISO } from "@/lib/format";
 import type { DayView, Farm } from "@/lib/types";
 
 type Props = {
-  tab: "input" | "status";
-  onTab: (t: "input" | "status") => void;
+  tab: "input" | "status" | "cases";
+  onTab: (t: "input" | "status" | "cases") => void;
   token: string;
   isBansuk: boolean;
   isAdmin?: boolean;
@@ -52,6 +54,7 @@ export default function Home(p: Props) {
           <h1 className="farm-name">{p.day?.farm.name ?? p.farms[0]?.name}</h1>
         )}
         <span className="head-tools">
+          <NotificationBell token={p.token} />
           <LangToggle className="link" />
           <button type="button" className="link" onClick={p.onLogout}>
             {t("로그아웃")}
@@ -79,9 +82,14 @@ export default function Home(p: Props) {
         <button type="button" role="tab" aria-selected={p.tab === "status"} onClick={() => p.onTab("status")}>
           {t("현황")}
         </button>
+        <button type="button" role="tab" aria-selected={p.tab === "cases"} onClick={() => p.onTab("cases")}>
+          {t("폐사·부검")}
+        </button>
       </div>
 
-      {p.tab === "status" ? (
+      {p.tab === "cases" ? (
+        <HomeCases token={p.token} farmId={p.farmId} isBansuk={p.isBansuk} />
+      ) : p.tab === "status" ? (
         <>
           <Dashboard token={p.token} farmId={p.farmId} date={p.date} />
           {p.isBansuk && (

@@ -345,7 +345,7 @@ def audit_log(limit: int = 100, _: User = Depends(admin_user), db: Session = Dep
         "items": [
             {
                 "at": r.at.isoformat() if r.at else None,
-                "actor": names.get(r.actor_id, "시스템") if r.actor_id else "시스템",
+                "actor": names.get(r.actor_id) if r.actor_id else None,
                 "action": ACTION_LABELS.get(r.action, r.action),
                 "target": names.get(r.target_user_id) or farms.get(r.target_farm_id) or "",
             }

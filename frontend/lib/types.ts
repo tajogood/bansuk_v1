@@ -128,7 +128,7 @@ export type Dashboard = {
 };
 
 export type Farm = { id: number; name: string; region: string | null };
-export type PinRule = { kind: "digits6" | "password"; text: string };
+export type PinRule = { kind: "digits6" | "password"; rule: string };
 
 export type SessionUser = {
   id: number;
@@ -187,7 +187,7 @@ export type AdminFarm = {
   config: FarmConfigIn | null;
 };
 
-export type AuditItem = { at: string | null; actor: string; action: string; target: string };
+export type AuditItem = { at: string | null; actor: string | null; action: string; target: string };
 
 // ---------- 반석 데이터 분석기 ----------
 export type AnalysisQuery = {
@@ -244,4 +244,71 @@ export type AnalysisDashboard = {
   owner: string | null;
   mine: boolean;
   updated_at: string | null;
+};
+
+// ---------- 폐사 신고·부검 ----------
+export type CaseStatus = "reported" | "scheduling" | "scheduled" | "done" | "shared" | "cancelled";
+export type Finding = { organ: string; lesions: string[]; note?: string | null };
+export type CaseResult = {
+  performed_at: string | null;
+  birds_examined: number | null;
+  findings: Finding[];
+  suspected: string[];
+  samples: string[];
+  summary: string | null;
+  advice: string | null;
+  final_diagnosis: string | null;
+  internal_note?: string | null;
+};
+export type CasePhotoItem = {
+  id: number;
+  stage: "report" | "necropsy";
+  thumb: string;
+  full: string;
+  width: number | null;
+  height: number | null;
+  taken_at: string | null;
+  caption: string | null;
+  can_delete: boolean;
+};
+export type CaseEventItem = {
+  id: number;
+  at: string | null;
+  kind: string;
+  data: Record<string, unknown>;
+  author: string;
+  side: "bansuk" | "farm" | "system";
+  mine: boolean;
+};
+export type NecropsyCase = {
+  id: number;
+  status: CaseStatus;
+  awaiting: "farm" | "bansuk" | null;
+  farm: { id: number; name: string; region: string | null } | null;
+  house: { id: number; name: string } | null;
+  flock: { id: number; placed_on: string; age_days: number } | null;
+  reported_at: string | null;
+  dead_count: number | null;
+  onset: string | null;
+  symptoms: string[];
+  report_note: string | null;
+  proposals: { at: string; by: "bansuk" | "farm" }[];
+  scheduled_at: string | null;
+  vet: { id: number; name: string } | null;
+  shared_at: string | null;
+  updated_at: string | null;
+  result?: CaseResult;
+  events?: CaseEventItem[];
+  photos?: CasePhotoItem[];
+  production?: { date: string; mortality: number | null; lay_rate: number | null }[];
+  vets?: { id: number; name: string }[];
+  upload?: { saved: number; failed: { name: string; error: string }[] };
+};
+export type NotificationItem = {
+  id: number;
+  case_id: number | null;
+  kind: string;
+  data: Record<string, unknown>;
+  at: string | null;
+  read: boolean;
 };

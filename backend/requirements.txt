@@ -5,6 +5,7 @@ pydantic>=2.7
 python-multipart>=0.0.9
 openpyxl>=3.1
 cryptography>=42
+pillow>=10
 # 운영 DB
 psycopg[binary]>=3.2
 # 개발

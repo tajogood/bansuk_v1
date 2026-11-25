@@ -5,6 +5,9 @@ import type {
   AuditItem,
   FarmConfigIn,
   Role,
+  NecropsyCase,
+  NotificationItem,
+  CaseResult,
   AnalysisDashboard,
   AnalysisQuery,
   Catalog,
@@ -161,4 +164,57 @@ export const adminApi = {
   updateFarm: (t: string, id: number, b: FarmIn) =>
     request<{ farm: AdminFarm }>(`/api/admin/farms/${id}`, { method: "PUT", body: JSON.stringify(b) }, t),
   audit: (t: string) => request<{ items: AuditItem[] }>("/api/admin/audit", {}, t),
+};
+
+const post = (path: string, t: string, body: object = {}) =>
+  request<NecropsyCase>(path, { method: "POST", body: JSON.stringify(body) }, t);
+
+export const casesApi = {
+  list: (t: string, q: { status?: string; farm_id?: number } = {}) => {
+    const p = new URLSearchParams();
+    if (q.status) p.set("status", q.status);
+    if (q.farm_id) p.set("farm_id", String(q.farm_id));
+    return request<{ cases: NecropsyCase[] }>(`/api/cases?${p}`, {}, t);
+  },
+  get: (t: string, id: number) => request<NecropsyCase>(`/api/cases/${id}`, {}, t),
+  report: (t: string, b: { farm_id: number; house_id: number | null; dead_count: number | null; onset: string | null; symptoms: string[]; note: string | null }) =>
+    post("/api/cases", t, b),
+  propose: (t: string, id: number, b: { slots: string[]; vet_id?: number | null; message?: string | null }) => post(`/api/cases/${id}/propose`, t, b),
+  accept: (t: string, id: number, at: string) => post(`/api/cases/${id}/accept`, t, { at }),
+  request: (t: string, id: number, b: { at?: string | null; message?: string | null }) => post(`/api/cases/${id}/request`, t, b),
+  confirm: (t: string, id: number, b: { at: string; vet_id?: number | null; message?: string | null }) => post(`/api/cases/${id}/confirm`, t, b),
+  message: (t: string, id: number, text: string) => post(`/api/cases/${id}/message`, t, { text }),
+  cancel: (t: string, id: number, reason: string | null) => post(`/api/cases/${id}/cancel`, t, { reason }),
+  result: (t: string, id: number, b: Omit<CaseResult, "performed_at"> & { performed_at?: string | null }) =>
+    request<NecropsyCase>(`/api/cases/${id}/result`, { method: "PUT", body: JSON.stringify(b) }, t),
+  share: (t: string, id: number) => post(`/api/cases/${id}/share`, t),
+  deletePhoto: (t: string, id: number, photoId: number) =>
+    request<NecropsyCase>(`/api/cases/${id}/photos/${photoId}`, { method: "DELETE" }, t),
+  /** 사진 올리기. FormData라 Content-Type은 브라우저가 정한다. */
+  uploadPhotos: async (t: string, id: number, files: Blob[]) => {
+    const fd = new FormData();
+    files.forEach((f, i) => fd.append("files", f, `photo-${i}.jpg`));
+    const res = await fetch(`${API_URL}/api/cases/${id}/photos`, {
+      method: "POST",
+      body: fd,
+      headers: { Authorization: `Bearer ${t}`, "Accept-Language": storedLang() },
+    });
+    if (!res.ok) {
+      let msg = tr("요청을 처리하지 못했습니다 ({status})", { status: res.status });
+      try {
+        const b = await res.json();
+        if (typeof b.detail === "string") msg = b.detail;
+      } catch {
+        /* 본문 없음 */
+      }
+      throw new ApiError(res.status, msg);
+    }
+    return (await res.json()) as NecropsyCase;
+  },
+};
+
+export const notificationsApi = {
+  list: (t: string) => request<{ unread: number; items: NotificationItem[] }>("/api/notifications", {}, t),
+  count: (t: string) => request<{ unread: number }>("/api/notifications/count", {}, t),
+  readAll: (t: string) => request<{ unread: number }>("/api/notifications/read-all", { method: "POST" }, t),
 };

@@ -144,6 +144,6 @@ def test_english_responses(client):
     blocked = client.get("/api/admin/users", headers=h)
     assert blocked.json()["detail"]["message"] == "You need to set a new password"
     me = client.get("/api/me", headers=h).json()["user"]
-    assert me["role_label"] == "Bansuk admin" and me["pin_rule"]["text"].startswith("at least 8")
+    assert me["role_label"] == "Bansuk admin" and me["pin_rule"]["rule"].startswith("at least 8")
     # 한국어 요청은 그대로
     assert client.get("/api/me", headers=bearer(login(client, ADMIN, "135790"))).json()["user"]["role_label"] == "반석 관리자"

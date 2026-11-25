@@ -57,7 +57,7 @@ export default function SetPin({
       </div>
       <h1>{t("비밀번호 정하기")}</h1>
       <p className="muted">
-        {t("받은 임시 비밀번호 대신 본인만 아는 비밀번호를 정해 주세요. 규칙: {rule}.", { rule: session.user.pin_rule.text })}
+        {t("받은 임시 비밀번호 대신 본인만 아는 비밀번호를 정해 주세요. 규칙: {rule}.", { rule: session.user.pin_rule.rule })}
       </p>
       {!tempPin && (
         <label>

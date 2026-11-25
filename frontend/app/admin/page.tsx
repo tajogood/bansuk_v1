@@ -5,6 +5,7 @@ import { formatPhone } from "@/components/Login";
 import { adminApi, loadSession } from "@/lib/api";
 import type { AccountStatus, AdminFarm, AdminHouse, AdminUser, AuditItem, FarmConfigIn, Role, Session } from "@/lib/types";
 import LangToggle from "@/components/LangToggle";
+import NotificationBell from "@/components/NotificationBell";
 import { k, locale, tr, useLang } from "@/lib/i18n";
 import "../analysis.css";
 import "../admin.css";
@@ -223,6 +224,7 @@ export default function AdminPage() {
         <h1>{t("계정·농장 관리")}</h1>
         <span className="an-spacer" />
         <LangToggle />
+        <NotificationBell token={session.token} />
         <span className="an-muted">{session.user.name}</span>
       </header>
       <nav className="ad-tabs" role="tablist">
@@ -415,7 +417,7 @@ export default function AdminPage() {
                 {audit.map((a, i) => (
                   <tr key={i}>
                     <td className="an-muted num">{fmtTime(a.at)}</td>
-                    <td>{a.actor}</td>
+                    <td>{a.actor ?? t("시스템")}</td>
                     <td>{a.action}</td>
                     <td>{a.target}</td>
                   </tr>

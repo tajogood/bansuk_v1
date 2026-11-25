@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import LangToggle from "@/components/LangToggle";
+import NotificationBell from "@/components/NotificationBell";
 import { k, locale, tr, useLang } from "@/lib/i18n";
 import SeriesChart, { toCsv } from "@/components/SeriesChart";
 import { analysisApi, loadSession } from "@/lib/api";
@@ -253,7 +254,9 @@ export default function AnalysisPage() {
         <a href="/" className="an-back">‹ {t("생산 기록")}</a>
         <h1>{t("데이터 분석기")}</h1>
         <span className="an-spacer" />
+        <a href="/cases/" className="an-link">{t("폐사·부검")}</a>
         <LangToggle />
+        <NotificationBell token={session.token} />
         <a href="/report/" className="an-link">{t("계군 성적 보고서")}</a>
       </header>
 

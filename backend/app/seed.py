@@ -162,7 +162,109 @@ def seed(reset: bool = True, days: int = 45) -> None:
             )
             day += dt.timedelta(days=1)
     db.commit()
+    _seed_cases(db, farm, owner, vet, today)
     print(f"데모 데이터 생성 완료: {DEMO_FARM}, 계군 {len(houses) + 1}개 (동마다 과거 계군 3개 포함)")
+
+
+
+
+def _placeholder_jpeg(seed: int) -> bytes:
+    """데모용 사진 (실제 부검 사진이 아닌 색 블록). 공개 저장소에 실제 사진을 넣지 않기 위함."""
+    import io
+
+    from PIL import Image, ImageDraw
+
+    r = random.Random(seed)
+    img = Image.new("RGB", (1200, 900), (r.randint(150, 200), r.randint(60, 90), r.randint(60, 90)))
+    d = ImageDraw.Draw(img)
+    for _ in range(14):
+        x, y, rad = r.randint(0, 1200), r.randint(0, 900), r.randint(30, 160)
+        c = (r.randint(120, 230), r.randint(40, 120), r.randint(40, 110))
+        d.ellipse((x - rad, y - rad, x + rad, y + rad), fill=c)
+    d.rectangle((0, 820, 1200, 900), fill=(20, 20, 20))
+    d.text((24, 845), "DEMO PHOTO (not a real necropsy image)", fill=(255, 255, 255))
+    buf = io.BytesIO()
+    img.save(buf, "JPEG", quality=85)
+    return buf.getvalue()
+
+
+def _seed_cases(db, farm, owner, vet, today) -> None:
+    """부검 흐름의 각 단계를 보여주는 데모 건 3개."""
+    from .models import CaseEvent, CasePhoto, Flock, FlockLocation, House, NecropsyCase, Notification
+    from .storage import save_photo
+
+    houses = {h.name: h for h in db.query(House).filter_by(farm_id=farm.id)}
+    # 서버가 찍는 시각은 UTC로 저장한다 (부검 일정은 현장 시각)
+    now_ = dt.datetime.now(dt.timezone.utc).replace(tzinfo=None, second=0, microsecond=0)
+
+    def flock_of(h):
+        loc = db.query(FlockLocation).filter(FlockLocation.house_id == h.id, FlockLocation.to_date.is_(None)).first()
+        return loc.flock_id if loc else None
+
+    def add_photos(c, stage, n, by):
+        for i in range(n):
+            info = save_photo(c.id, _placeholder_jpeg(c.id * 10 + i))
+            db.add(CasePhoto(case_id=c.id, stage=stage, uploaded_by=by.id, **info))
+
+    # 1) 방금 신고 (반석이 일정을 잡아야 함)
+    h = houses["5동"]
+    c1 = NecropsyCase(farm_id=farm.id, house_id=h.id, flock_id=flock_of(h), status="reported", awaiting="bansuk",
+                      reported_by=owner.id, reported_at=now_ - dt.timedelta(hours=2), dead_count=38, onset="today",
+                      symptoms=["sudden_death", "comb_color", "feed_drop"], report_note="새벽부터 여러 마리 죽어 있었습니다.",
+                      proposals=[])
+    db.add(c1)
+    db.flush()
+    db.add(CaseEvent(case_id=c1.id, author_id=owner.id, kind="reported", at=c1.reported_at,
+                     data={"dead": 38, "onset": "today", "symptoms": c1.symptoms, "note": c1.report_note}))
+    add_photos(c1, "report", 2, owner)
+    db.add(CaseEvent(case_id=c1.id, author_id=owner.id, kind="photos", at=c1.reported_at, data={"count": 2, "stage": "report"}))
+    db.add(Notification(user_id=vet.id, case_id=c1.id, kind="case_reported", created_at=c1.reported_at,
+                        data={"farm": farm.name, "house": h.name, "dead": 38, "by": owner.name}))
+
+    # 2) 일정 조정 중 (반석이 제안, 농장 답 대기)
+    h = houses["2동"]
+    t2 = now_ - dt.timedelta(days=1, hours=3)
+    slots = [(dt.datetime.combine(today + dt.timedelta(days=1), dt.time(10, 0))).isoformat(timespec="minutes"),
+             (dt.datetime.combine(today + dt.timedelta(days=1), dt.time(14, 30))).isoformat(timespec="minutes")]
+    c2 = NecropsyCase(farm_id=farm.id, house_id=h.id, flock_id=flock_of(h), status="scheduling", awaiting="farm",
+                      reported_by=owner.id, reported_at=t2, dead_count=12, onset="days_2_3",
+                      symptoms=["respiratory", "lay_drop"], proposals=[{"at": s_, "by": "bansuk"} for s_ in slots], vet_id=vet.id)
+    db.add(c2)
+    db.flush()
+    db.add_all([
+        CaseEvent(case_id=c2.id, author_id=owner.id, kind="reported", at=t2, data={"dead": 12, "onset": "days_2_3", "symptoms": c2.symptoms}),
+        CaseEvent(case_id=c2.id, author_id=vet.id, kind="proposed", at=t2 + dt.timedelta(hours=1),
+                  data={"slots": slots, "message": "내일 오전이나 오후 중 편한 시간을 골라 주세요."}),
+        Notification(user_id=owner.id, case_id=c2.id, kind="case_proposed", created_at=t2 + dt.timedelta(hours=1),
+                     data={"farm": farm.name, "house": h.name, "dead": 12, "slots": slots, "by": vet.name}),
+    ])
+
+    # 3) 결과 공유 완료
+    h = houses["4동"]
+    t3 = now_ - dt.timedelta(days=9)
+    sched = dt.datetime.combine(today - dt.timedelta(days=8), dt.time(10, 0))
+    c3 = NecropsyCase(farm_id=farm.id, house_id=h.id, flock_id=flock_of(h), status="shared", reported_by=owner.id,
+                      reported_at=t3, dead_count=21, onset="yesterday", symptoms=["lay_drop", "diarrhea"], proposals=[],
+                      scheduled_at=sched, vet_id=vet.id, performed_at=sched, birds_examined=6,
+                      findings=[{"organ": "liver", "lesions": ["swelling", "hemorrhage"], "note": "황색, 잘 부서짐"},
+                                {"organ": "ovary", "lesions": ["congestion"], "note": None},
+                                {"organ": "abdomen", "lesions": ["fat"], "note": "복강 지방 많음"}],
+                      suspected=["fatty_liver"], samples=["histopath"],
+                      summary="6수 부검. 간이 커지고 노랗게 변했으며 출혈이 보입니다. 복강 지방이 많습니다. 지방간 출혈 증후군으로 보입니다.",
+                      advice="사료 에너지를 조금 낮추고 계사 온도가 높게 유지되지 않도록 관리해 주세요. 조직 검사 결과가 나오면 다시 알려 드리겠습니다.",
+                      internal_note="노계군, 여름철 고온 영향 가능성.", shared_at=sched + dt.timedelta(hours=5))
+    db.add(c3)
+    db.flush()
+    db.add_all([
+        CaseEvent(case_id=c3.id, author_id=owner.id, kind="reported", at=t3, data={"dead": 21, "onset": "yesterday", "symptoms": c3.symptoms}),
+        CaseEvent(case_id=c3.id, author_id=vet.id, kind="proposed", at=t3 + dt.timedelta(minutes=40), data={"slots": [sched.isoformat(timespec="minutes")]}),
+        CaseEvent(case_id=c3.id, author_id=owner.id, kind="accepted", at=t3 + dt.timedelta(hours=2), data={"at": sched.isoformat(timespec="minutes")}),
+        CaseEvent(case_id=c3.id, author_id=vet.id, kind="photos", at=sched + dt.timedelta(hours=1), data={"count": 4, "stage": "necropsy"}),
+        CaseEvent(case_id=c3.id, author_id=vet.id, kind="done", at=sched + dt.timedelta(hours=2)),
+        CaseEvent(case_id=c3.id, author_id=vet.id, kind="shared", at=c3.shared_at),
+    ])
+    add_photos(c3, "necropsy", 4, vet)
+    db.commit()
 
 
 if __name__ == "__main__":

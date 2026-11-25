@@ -87,6 +87,27 @@ EXACT: dict[str, str] = {
     "지원하지 않는 지표·축·묶음입니다": "Unsupported metric, axis or grouping",
     "사료 회사·단계, 입추 계절, 부화장·품종, 점등 조건은 계군마다 다를 수 있으며 이 비교에서 보정하지 않았습니다.":
         "Feed supplier and phase, placement season, hatchery and breed, and lighting may differ between flocks and are not adjusted for in this comparison.",
+    # 부검
+    "부검 건을 찾을 수 없습니다": "Necropsy case not found",
+    "반석 계정만 할 수 있습니다": "Only Bansuk accounts can do this",
+    "날짜와 시간을 확인해 주세요": "Check the date and time",
+    "지금은 일정을 바꿀 수 없는 상태입니다": "The schedule cannot be changed at this stage",
+    "담당 수의사를 확인해 주세요": "Check the assigned veterinarian",
+    "반석은 '일정 확정'을 쓰세요": "Bansuk staff should use “Confirm schedule”",
+    "제안된 시간 중에서 골라 주세요": "Choose one of the proposed times",
+    "반석은 '시간 제안'을 쓰세요": "Bansuk staff should use “Propose times”",
+    "원하는 시간이나 메시지를 적어 주세요": "Enter a preferred time or a message",
+    "메시지를 적어 주세요": "Enter a message",
+    "부검을 마친 건은 취소할 수 없습니다": "A case cannot be cancelled after the necropsy",
+    "취소된 건입니다": "This case has been cancelled",
+    "결과를 먼저 저장해 주세요": "Save the results first",
+    "소견 요약이나 장기별 소견을 적어 주세요": "Add a summary or findings by organ",
+    "한 번에 30장까지 올릴 수 있습니다": "Up to 30 photos at a time",
+    "사진을 찾을 수 없습니다": "Photo not found",
+    "올린 사람만 지울 수 있습니다": "Only the uploader can delete this",
+    "사진 링크가 만료되었습니다. 화면을 새로 고쳐 주세요": "The photo link has expired. Please refresh",
+    "사진 한 장이 너무 큽니다 (25MB 이하)": "Photo is too large (max 25 MB)",
+    "사진 파일을 읽을 수 없습니다": "Cannot read the photo file",
     # 분석기 카탈로그
     "생산 기록": "Production records",
     "산란율": "Lay rate", "총 산란수": "Total eggs", "수수(평균)": "Birds (average)", "폐사수": "Mortality",
@@ -139,13 +160,21 @@ def translate(text: str) -> str:
     return text
 
 
+# 사람이 직접 적은 글은 번역하지 않는다 ("확인"이라고 적은 메시지가 "OK"로 바뀌지 않게)
+FREE_TEXT_KEYS = {
+    "name", "text", "note", "message", "reason", "summary", "advice", "internal_note", "report_note",
+    "final_diagnosis", "caption", "reviewer_note", "region", "farm", "house", "by", "author", "actor", "target",
+    "suspected", "program", "breed", "hatchery", "issued_by", "owner",
+}
+
+
 def translate_obj(obj: Any) -> Any:
     if isinstance(obj, str):
         return translate(obj)
     if isinstance(obj, list):
         return [translate_obj(v) for v in obj]
     if isinstance(obj, dict):
-        return {k: translate_obj(v) for k, v in obj.items()}
+        return {k: (v if k in FREE_TEXT_KEYS else translate_obj(v)) for k, v in obj.items()}
     return obj
 
 
@@ -168,5 +197,9 @@ async def lang_middleware(request: Request, call_next):
 
 async def http_exception_handler(request: Request, exc: HTTPException):
     lang = pick_lang(request.headers.get("accept-language"))
-    detail = translate_obj(exc.detail) if lang == "en" else exc.detail
+    detail = exc.detail
+    if lang == "en":  # 오류 내용은 모두 시스템 문구이므로 키와 상관없이 번역
+        detail = translate(detail) if isinstance(detail, str) else (
+            {k: translate(v) if isinstance(v, str) else v for k, v in detail.items()} if isinstance(detail, dict) else detail
+        )
     return JSONResponse({"detail": detail}, status_code=exc.status_code, headers=getattr(exc, "headers", None))

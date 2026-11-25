@@ -24,3 +24,7 @@ EGG_GRADES: dict[str, str] = {
 
 # 새 농장의 기본 입력 규격 (농장마다 바꿀 수 있음)
 DEFAULT_GRADES = ["jumbo", "xl", "l", "m", "s", "double", "broken"]
+
+# 현장 시간대. 부검 일정처럼 사람이 고른 시각은 이 시간대의 벽시계 시각 그대로 저장하고,
+# 서버가 찍는 시각(신고·기록·알림)은 UTC로 저장해 화면에서 그 기기 시간으로 바꿔 보여준다.
+LOCAL_TZ = os.environ.get("LOCAL_TZ", "Asia/Seoul")

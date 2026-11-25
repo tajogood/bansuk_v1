@@ -11,7 +11,7 @@ import { todayISO } from "@/lib/format";
 import { enqueue, flush, isNetworkError, pending } from "@/lib/queue";
 import type { DayView, HouseView, Session, Warning } from "@/lib/types";
 
-type Sheet = { houseName: string; warnings: Warning[]; nextId: number | null };
+type Sheet = { houseName: string; houseId: number; dead: number | null; warnings: Warning[]; nextId: number | null };
 
 export default function Page() {
   const t = useT();
@@ -29,7 +29,7 @@ export default function Page() {
   const [pendingCount, setPendingCount] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
-  const [tab, setTab] = useState<"input" | "status">("input");
+  const [tab, setTab] = useState<"input" | "status" | "cases">("input");
   const [tempPin, setTempPin] = useState<string | null>(null);
 
   const signOut = useCallback((s: Session | null) => {
@@ -149,7 +149,7 @@ export default function Page() {
       setDay(nd);
       const nextId = nextTodo(houseId, nd, queued);
       if (updated.warnings.length) {
-        setSheet({ houseName: hv.house.name, warnings: updated.warnings, nextId });
+        setSheet({ houseName: hv.house.name, houseId: hv.house.id, dead: typeof updated.record?.mortality === "number" ? updated.record.mortality : null, warnings: updated.warnings, nextId });
       } else {
         showToast(t("{house} 저장했습니다", { house: hv.house.name }));
         proceed(nextId);
@@ -247,7 +247,15 @@ export default function Page() {
                 </li>
               ))}
             </ul>
-            <p className="muted">{t("반석에도 같은 내용이 전달됩니다.")}</p>
+            {sheet.warnings.some((w) => w.code === "mortality_spike") && (
+              <a
+                className="btn-report"
+                href={`/cases/?new=1&farm=${farmId}&house=${sheet.houseId}${sheet.dead !== null ? `&dead=${sheet.dead}` : ""}`}
+              >
+                {t("반석에 폐사 신고")}
+                <small>{t("부검이 필요한지 반석이 확인하고 일정을 잡아 드립니다.")}</small>
+              </a>
+            )}
             <div className="sheet-actions">
               <button type="button" className="btn-ghost" onClick={() => setSheet(null)}>
                 {t("다시 고치기")}

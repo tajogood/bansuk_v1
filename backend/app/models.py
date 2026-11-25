@@ -261,3 +261,102 @@ class DailyRecord(Base):
 
     def egg(self, grade: str) -> int | None:
         return getattr(self, f"egg_{grade}")
+
+
+# ---------------------------------------------------------------------------
+# 폐사 신고와 부검
+# ---------------------------------------------------------------------------
+
+class NecropsyCase(Base):
+    """폐사 신고 한 건 = 부검 한 건. 신고 → 일정 조정 → 일정 확정 → 부검 완료 → 결과 공유.
+
+    status:
+      reported    농장이 신고함, 반석이 일정을 제안해야 함
+      scheduling  일정 조정 중 (awaiting = 지금 답할 쪽: farm | bansuk)
+      scheduled   일정 확정
+      done        부검을 했고 결과를 쓰는 중 (농장에는 아직 안 보임)
+      shared      결과를 농장에 공유함
+      cancelled   취소
+    """
+
+    __tablename__ = "necropsy_case"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    farm_id: Mapped[int] = mapped_column(ForeignKey("farm.id"), index=True)
+    house_id: Mapped[int | None] = mapped_column(ForeignKey("house.id"))
+    flock_id: Mapped[int | None] = mapped_column(ForeignKey("flock.id"))
+    status: Mapped[str] = mapped_column(String(20), default="reported", index=True)
+    awaiting: Mapped[str | None] = mapped_column(String(10))  # farm | bansuk
+
+    # 신고 (농장)
+    reported_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    reported_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+    dead_count: Mapped[int | None] = mapped_column(Integer)
+    onset: Mapped[str | None] = mapped_column(String(20))  # today | yesterday | days_2_3 | week
+    symptoms: Mapped[list] = mapped_column(JSON, default=list)  # 코드 목록
+    report_note: Mapped[str | None] = mapped_column(Text)
+
+    # 일정
+    proposals: Mapped[list] = mapped_column(JSON, default=list)  # [{"at": iso, "by": "bansuk"|"farm"}]
+    scheduled_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
+    vet_id: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+
+    # 부검 결과 (반석)
+    performed_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
+    birds_examined: Mapped[int | None] = mapped_column(Integer)
+    findings: Mapped[list] = mapped_column(JSON, default=list)  # [{"organ": code, "lesions": [code], "note": str}]
+    suspected: Mapped[list] = mapped_column(JSON, default=list)  # 질병 코드 또는 직접 입력
+    samples: Mapped[list] = mapped_column(JSON, default=list)  # 검체 코드
+    summary: Mapped[str | None] = mapped_column(Text)  # 소견 요약 (농장에 보임)
+    advice: Mapped[str | None] = mapped_column(Text)  # 농장 권고 사항 (농장에 보임)
+    internal_note: Mapped[str | None] = mapped_column(Text)  # 반석 내부 메모 (농장에 안 보임)
+    final_diagnosis: Mapped[str | None] = mapped_column(Text)  # 검사 결과 확정 후
+    shared_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
+    updated_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class CaseEvent(Base):
+    """부검 건의 진행 기록과 메시지 (화면의 타임라인). 문구는 화면에서 kind+data로 만든다."""
+
+    __tablename__ = "case_event"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("necropsy_case.id"), index=True)
+    at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+    author_id: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    # reported | proposed | requested | accepted | confirmed | message | done | shared | cancelled | photos
+    kind: Mapped[str] = mapped_column(String(20))
+    data: Mapped[dict | None] = mapped_column(JSON)
+
+
+class CasePhoto(Base):
+    """부검 건 사진. 파일은 저장소(개발: 디스크, 운영: S3)에 두고 여기에는 위치만."""
+
+    __tablename__ = "case_photo"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("necropsy_case.id"), index=True)
+    stage: Mapped[str] = mapped_column(String(10))  # report(농장 신고 때) | necropsy(부검 때)
+    key: Mapped[str] = mapped_column(String(200))  # 원본 저장 위치
+    thumb_key: Mapped[str] = mapped_column(String(200))
+    width: Mapped[int | None] = mapped_column(Integer)
+    height: Mapped[int | None] = mapped_column(Integer)
+    taken_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
+    caption: Mapped[str | None] = mapped_column(String(200))
+    tags: Mapped[dict] = mapped_column(JSON, default=dict)  # 나중에 태깅: {"organ":..., "lesions":[...], "diagnosis":...}
+    uploaded_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    uploaded_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Notification(Base):
+    """앱 안 알림. 문구는 화면에서 kind+data로 만든다 (한국어·영어)."""
+
+    __tablename__ = "notification"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("app_user.id"), index=True)
+    case_id: Mapped[int | None] = mapped_column(ForeignKey("necropsy_case.id"))
+    kind: Mapped[str] = mapped_column(String(30))
+    data: Mapped[dict | None] = mapped_column(JSON)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+    read_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
