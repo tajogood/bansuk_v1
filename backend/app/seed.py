@@ -402,6 +402,8 @@ def _seed_virtual_production(db, today) -> None:
         "가상농장 사": (True, 0, [("1동", 250, 0.97, None)]),
     }
     for farm in db.query(Farm).filter(Farm.name.in_(list(plans))):
+        if db.query(Flock).filter_by(farm_id=farm.id).first():
+            continue  # 이미 넣은 농장은 건너뜀 (여러 번 실행해도 안전)
         entered_today, lag, houses = plans[farm.name]
         if not db.query(FarmInputConfig).filter_by(farm_id=farm.id).first():
             db.add(FarmInputConfig(farm_id=farm.id))
@@ -517,5 +519,11 @@ def keep_configured_admin() -> None:
 
 
 if __name__ == "__main__":
-    seed(reset="--keep" not in sys.argv)
-    keep_configured_admin()
+    if "--virtual-only" in sys.argv:  # 기존 DB를 지우지 않고 가상농장 생산 기록만 추가
+        _db = SessionLocal()
+        _seed_virtual_production(_db, dt.date.today())
+        _db.close()
+        print("가상농장 생산 기록을 추가했습니다.")
+    else:
+        seed(reset="--keep" not in sys.argv)
+        keep_configured_admin()

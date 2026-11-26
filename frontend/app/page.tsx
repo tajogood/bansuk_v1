@@ -1,6 +1,7 @@
 "use client";
 
 import BansukHome from "@/components/BansukHome";
+import BansukFarm from "@/components/BansukFarm";
 import { useCallback, useEffect, useState } from "react";
 import Home from "@/components/Home";
 import HouseEntry from "@/components/HouseEntry";
@@ -48,7 +49,7 @@ export default function Page() {
     const qFarm = Number(new URLSearchParams(window.location.search).get("farm"));
     if (qFarm) {
       setFarmId(qFarm);
-      setTab("status");
+      setTab(new URLSearchParams(window.location.search).get("mode") === "input" ? "input" : "status");
     } else if (s?.farms.length) setFarmId(s.farms[0].id);
     setPendingCount(pending().length);
     setReady(true);
@@ -204,10 +205,17 @@ export default function Page() {
     );
 
   const isBansukUser = ["bansuk_vet", "bansuk_staff", "admin"].includes(session.user.role);
-  if (isBansukUser && !new URLSearchParams(typeof window === "undefined" ? "" : window.location.search).get("farm"))
+  const qs = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
+  if (isBansukUser && !qs.get("farm"))
     return (
       <main>
         <BansukHome token={session.token} />
+      </main>
+    );
+  if (isBansukUser && qs.get("mode") !== "input")
+    return (
+      <main>
+        <BansukFarm token={session.token} farmId={Number(qs.get("farm"))} farms={session.farms} />
       </main>
     );
 

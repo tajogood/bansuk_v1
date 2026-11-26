@@ -383,3 +383,179 @@ body.bs-on .rp-back { display: none; }
   main.is-wide { max-width: 1280px; }
   main.is-wide .dash { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
 }
+
+/* ---------- 농장 상세 ---------- */
+.crumbs { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 14px; color: var(--bs-ink-3); }
+.crumbs a { color: var(--bs-ink-2); text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+.crumbs select { border: 0; background: none; font: inherit; color: var(--bs-ink); font-weight: 600; padding: 2px 4px; border-radius: 6px; cursor: pointer; }
+.crumbs select:hover { background: #fff; }
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: var(--bs-r-ctl);
+  border: 1px solid var(--bs-line);
+  background: #fff;
+  color: var(--bs-ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.btn-ghost:hover { border-color: #b9c6bd; background: #fafcf9; }
+.link-s { font-size: 13px; color: var(--bs-barn); font-weight: 600; }
+.bf-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.bf .bh-date { margin-top: 4px; }
+.bf-side { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.bf-side .vx-card { margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
+.bf-side .hc { margin: 0; padding: 0; }
+.bf-houses h2 { margin: 6px 0 12px; font-size: 18px; font-weight: 700; }
+body.bs-on .dash { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; padding: 0; }
+body.bs-on .dash-card { margin: 0; background: #fff; border: 1px solid var(--bs-line); border-radius: var(--bs-r-panel); padding: 18px 20px; box-shadow: none; }
+.btn-ghost, .btn-primary { white-space: nowrap; }
+.bh-head-actions { flex-wrap: wrap; justify-content: flex-end; }
+.bf-side .hc-new, .bf-side .hc-help { display: none; }
+
+/* ==========================================================================
+   다른 반석 화면 공통 리스킨 (부검·백신·검사·계군·사진·분석기·보고서·계정)
+   ========================================================================== */
+body.bs-on .cs-wrap,
+body.bs-on .an-wrap { background: var(--bs-canvas); }
+body.bs-on .cs-head,
+body.bs-on .an-head {
+  position: static;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 30px 36px 10px;
+  background: none;
+  border: 0;
+  gap: 12px;
+}
+body.bs-on .cs-head h1,
+body.bs-on .an-head h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.025em; color: var(--bs-ink); }
+body.bs-on .cs-head .lang-toggle,
+body.bs-on .cs-head .bell,
+body.bs-on .an-head .lang-toggle,
+body.bs-on .an-head .bell { display: none; }
+body.bs-on .cs-head a:not(.cs-back),
+body.bs-on .an-head a:not(.an-back),
+body.bs-on .lb-head-link {
+  padding: 7px 12px;
+  border: 1px solid var(--bs-line);
+  border-radius: var(--bs-r-ctl);
+  background: #fff;
+  color: var(--bs-ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+body.bs-on .cs-body { max-width: 1680px; padding: 8px 36px 64px; }
+body.bs-on .cs-pad { padding: 20px 36px; }
+body.bs-on .an-pad { padding: 16px 36px 48px; }
+body.bs-on .lb-body,
+body.bs-on .fl-body,
+body.bs-on .ph-body { max-width: 1680px; }
+body.bs-on .vx-body,
+body.bs-on .lb-form { max-width: 1120px; }
+body.bs-on .up-body { max-width: 920px; }
+body.bs-on .cs-muted, body.bs-on .an-muted { color: var(--bs-ink-3); }
+
+/* 탭 */
+body.bs-on .ad-tabs {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 0 36px;
+  gap: 4px;
+  background: none;
+  border-bottom: 1px solid var(--bs-line);
+}
+body.bs-on .ad-tabs button {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--bs-ink-3);
+  font-size: 14.5px;
+  font-weight: 600;
+  box-shadow: none;
+}
+body.bs-on .ad-tabs button:hover { color: var(--bs-ink); }
+body.bs-on .ad-tabs button[aria-selected="true"] { color: var(--bs-ink); box-shadow: inset 0 -2px 0 var(--bs-barn); background: none; }
+
+/* 패널·카드 */
+body.bs-on .cs-sec,
+body.bs-on .an-card,
+body.bs-on .cs-card,
+body.bs-on .fl-houses li,
+body.bs-on .vx-card {
+  border: 1px solid var(--bs-line);
+  border-radius: var(--bs-r-panel);
+  background: var(--bs-surface);
+  box-shadow: none;
+}
+body.bs-on .cs-sec { padding: 18px 20px; }
+body.bs-on .cs-card { padding: 14px 16px; transition: border-color 0.12s, transform 0.12s; }
+body.bs-on .cs-card:hover { border-color: #b9c8be; }
+body.bs-on .cs-box { border: 1px solid #b9d4c4; border-radius: var(--bs-r-panel); background: #fbfdfb; }
+body.bs-on .cs-sec h2, body.bs-on .cs-sec-head h2 { font-size: 16px; font-weight: 700; }
+
+/* 버튼 */
+body.bs-on .cs-primary,
+body.bs-on .an-primary,
+body.bs-on .rp-primary,
+body.bs-on .lb-btn.is-primary {
+  border: 0;
+  border-radius: var(--bs-r-ctl);
+  background: var(--bs-barn);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+body.bs-on .cs-primary:hover, body.bs-on .an-primary:hover, body.bs-on .rp-primary:hover { background: #185a42; }
+body.bs-on .link-btn {
+  border: 1px solid var(--bs-line);
+  border-radius: var(--bs-r-ctl);
+  background: #fff;
+  color: var(--bs-ink);
+  font-weight: 600;
+}
+body.bs-on .link-btn:hover { border-color: #b9c6bd; }
+
+/* 칩 */
+body.bs-on .cs-chips button,
+body.bs-on .lb-chips button,
+body.bs-on .vx-days button {
+  border: 1px solid var(--bs-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--bs-ink-2);
+  font-weight: 600;
+  font-size: 13.5px;
+}
+body.bs-on .cs-chips button[aria-pressed="true"],
+body.bs-on .lb-chips button[aria-pressed="true"],
+body.bs-on .vx-days button[aria-pressed="true"] { background: var(--bs-barn-deep); border-color: var(--bs-barn-deep); color: #fff; }
+
+/* 표 */
+body.bs-on .cs-table,
+body.bs-on .ad-table { font-size: 14.5px; }
+body.bs-on .cs-table th,
+body.bs-on .ad-table th { color: var(--bs-ink-3); font-size: 12.5px; font-weight: 600; border-bottom: 1px solid var(--bs-line); background: none; }
+body.bs-on .cs-table td,
+body.bs-on .ad-table td { border-bottom: 1px solid var(--bs-line-2); }
+body.bs-on .ad-table tbody tr:hover { background: #f4f8f3; }
+
+/* 입력칸 */
+body.bs-on .cs-body input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+body.bs-on .cs-body select,
+body.bs-on .cs-body textarea,
+body.bs-on .an-pad input:not([type="checkbox"]):not([type="radio"]),
+body.bs-on .an-pad select {
+  border: 1px solid var(--bs-line);
+  border-radius: var(--bs-r-ctl);
+  background: #fff;
+}
+
+/* 계군 관리: 동 카드를 격자로 */
+body.bs-on .fl-houses { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+body.bs-on .fl-houses li { padding: 18px 20px; }

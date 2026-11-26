@@ -1,4 +1,5 @@
 import type {
+  DailyRecord,
   LabelPhoto,
   LabelPhotoBrief,
   LabelSummary,
@@ -149,6 +150,8 @@ export const api = {
     request<Session>("/api/auth/login", { method: "POST", body: JSON.stringify({ phone, pin }) }),
   day: (token: string, farmId: number, date: string) =>
     request<DayView>(`/api/farms/${farmId}/day?date=${date}`, {}, token),
+  dailyRange: (token: string, farmId: number, start: string, end: string) =>
+    request<{ records: (DailyRecord & { house_id: number })[] }>(`/api/farms/${farmId}/daily?start=${start}&end=${end}`, {}, token),
   saveDaily: (token: string, farmId: number, houseId: number, date: string, body: object) =>
     request<HouseView>(
       `/api/farms/${farmId}/houses/${houseId}/daily/${date}`,
