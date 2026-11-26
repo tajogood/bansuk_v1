@@ -19,9 +19,10 @@ from .routers import admin, analysis, auth, cases, daily, epidemic, flocks, impo
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    # 1단계에서는 create_all로 시작하고, 운영 전환 시 Alembic 마이그레이션으로 바꾼다.
     check_key()
-    Base.metadata.create_all(engine)
+    # SQLite(개발·테스트)는 바로 테이블을 만들고, PostgreSQL은 alembic upgrade head(start.sh)로 관리한다.
+    if engine.dialect.name == "sqlite":
+        Base.metadata.create_all(engine)
     with SessionLocal() as db:
         ensure_admin(db)
     task = asyncio.create_task(reminders.loop()) if reminders.enabled() else None

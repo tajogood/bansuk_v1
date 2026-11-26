@@ -179,8 +179,40 @@ if [[ "$(cat "$DATA/requirements.hash" 2>/dev/null)" != "$REQ_HASH" ]]; then
   echo "$REQ_HASH" >"$DATA/requirements.hash"
 fi
 
+# ---------- 3-1. 데이터베이스 (PostgreSQL) ----------
+# DATABASE_URL 이 없으면: 맥은 Homebrew PostgreSQL을 설치·시작해 bansuk DB를 만들고 .env 에 적는다.
+# 그 밖의 서버는 SQLite로 돌고, 안내만 한다 (AWS 등은 RDS 주소를 .env 에 넣으면 됨).
+if [[ -z "${DATABASE_URL:-}" && "$IS_MAC" == 1 ]]; then
+  say "PostgreSQL 데이터베이스를 준비합니다"
+  for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do [[ -x "$b" ]] && eval "$("$b" shellenv)" && break; done
+  command -v brew >/dev/null || die "Homebrew가 필요합니다 (설치.command 를 실행하세요)"
+  brew list postgresql@16 >/dev/null 2>&1 || brew install postgresql@16 || die "PostgreSQL 설치 실패"
+  PG_BIN="$(brew --prefix postgresql@16)/bin"
+  brew services start postgresql@16 >/dev/null 2>&1 || true
+  for _ in $(seq 1 30); do "$PG_BIN/pg_isready" -q -h localhost && break; sleep 1; done
+  "$PG_BIN/pg_isready" -q -h localhost || die "PostgreSQL이 시작되지 않았습니다 (brew services list 확인)"
+  "$PG_BIN/psql" -h localhost -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='bansuk'" | grep -q 1 \
+    || "$PG_BIN/createdb" -h localhost bansuk || die "bansuk DB를 만들지 못했습니다"
+  DATABASE_URL="postgresql+psycopg://$(whoami)@localhost:5432/bansuk"
+  printf '\n# 개발 서버 PostgreSQL (start.sh가 자동으로 만듦)\nDATABASE_URL=%s\n' "$DATABASE_URL" >>"$ENV_FILE"
+  export DATABASE_URL
+fi
+if [[ "${DATABASE_URL:-}" == postgresql* ]]; then
+  say "데이터베이스 구조를 최신으로 맞춥니다"
+  (cd "$BACK" && "$VENV/bin/alembic" upgrade head >>"$LOG_FILE" 2>&1) || { tail -20 "$LOG_FILE"; die "DB 마이그레이션 실패"; }
+  if [[ -f "$BACK/bansuk.db" ]]; then
+    say "기존 SQLite 데이터를 PostgreSQL로 옮깁니다"
+    if ! (cd "$BACK" && "$VENV/bin/python" -m app.dbcopy sqlite:///./bansuk.db && "$VENV/bin/python" -c 'from app.seed import keep_configured_admin; keep_configured_admin()') 2>&1 | tee -a "$LOG_FILE"; then
+      die "데이터를 옮기지 못했습니다"
+    fi
+    mv "$BACK/bansuk.db" "$BACK/bansuk.db.migrated"
+    echo "  (옛 SQLite 파일은 backend/bansuk.db.migrated 로 남겨 두었습니다)"
+  fi
+fi
+
 # ---------- 4. 화면 빌드 (코드가 바뀐 경우만) ----------
 FRONT_REV="$( (git -C "$ROOT" rev-parse HEAD:frontend 2>/dev/null) || echo none)"
+[[ -n "$(git -C "$ROOT" status --porcelain -- frontend 2>/dev/null)" ]] && FRONT_REV="dirty-$(date +%s)"
 if [[ ! -d "$FRONT/out" || "$(cat "$BUILT_FILE" 2>/dev/null)" != "$FRONT_REV" || "$FRONT_REV" == none ]]; then
   say "화면을 빌드합니다 (1~2분)"
   (
