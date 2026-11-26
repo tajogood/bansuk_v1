@@ -149,7 +149,7 @@ kbd {
 .muted-s { margin: 2px 0 0; color: var(--bs-ink-3); font-size: 13px; }
 .muted-c { color: var(--bs-ink-3); }
 .warn-c { color: var(--bs-warn); font-weight: 600; }
-.btn-primary {
+body.bs-on .btn-primary {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -162,7 +162,7 @@ kbd {
   font-weight: 600;
   text-decoration: none;
 }
-.btn-primary:hover { background: #185a42; }
+body.bs-on .btn-primary:hover { background: #185a42; }
 .seg { display: inline-flex; padding: 3px; border-radius: 9px; background: var(--bs-line-2); }
 .seg button {
   border: 0;
@@ -390,7 +390,7 @@ body.bs-on .rp-back { display: none; }
 .crumbs a:hover { text-decoration: underline; }
 .crumbs select { border: 0; background: none; font: inherit; color: var(--bs-ink); font-weight: 600; padding: 2px 4px; border-radius: 6px; cursor: pointer; }
 .crumbs select:hover { background: #fff; }
-.btn-ghost {
+body.bs-on .btn-ghost {
   display: inline-flex;
   align-items: center;
   padding: 8px 14px;
@@ -402,7 +402,7 @@ body.bs-on .rp-back { display: none; }
   font-weight: 600;
   text-decoration: none;
 }
-.btn-ghost:hover { border-color: #b9c6bd; background: #fafcf9; }
+body.bs-on .btn-ghost:hover { border-color: #b9c6bd; background: #fafcf9; }
 .link-s { font-size: 13px; color: var(--bs-barn); font-weight: 600; }
 .bf-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .bf .bh-date { margin-top: 4px; }
@@ -412,7 +412,7 @@ body.bs-on .rp-back { display: none; }
 .bf-houses h2 { margin: 6px 0 12px; font-size: 18px; font-weight: 700; }
 body.bs-on .dash { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; padding: 0; }
 body.bs-on .dash-card { margin: 0; background: #fff; border: 1px solid var(--bs-line); border-radius: var(--bs-r-panel); padding: 18px 20px; box-shadow: none; }
-.btn-ghost, .btn-primary { white-space: nowrap; }
+body.bs-on .btn-ghost, body.bs-on .btn-primary { white-space: nowrap; }
 .bh-head-actions { flex-wrap: wrap; justify-content: flex-end; }
 .bf-side .hc-new, .bf-side .hc-help { display: none; }
 

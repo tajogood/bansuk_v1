@@ -1143,4 +1143,8 @@ export const EN: Record<string, string> = {
   "하루 평균": "Daily average",
   "동별 {m} 추이": "{m} by house",
   "동별 현황": "Houses",
+  "농장의 매일 기록과 반석의 진단을 한곳에서 봅니다.": "Daily farm records and Bansuk diagnostics in one place.",
+  "산란율, 폐사, 접종, 부검 결과까지 계군 하나의 이력으로 이어집니다.": "Lay rate, mortality, vaccinations and necropsy results build one history per flock.",
+  "이번 계군": "Current flock",
+  "같은 일령 과거 계군": "Past flocks at the same age",
 };
