@@ -648,3 +648,7 @@ body.bs-on .fl-houses li { padding: 18px 20px; }
 .rmap-info strong { font-size: 15px; color: var(--bs-ink); }
 .rmap-dz b { color: var(--bs-ink); }
 .rmap-hint { color: var(--bs-ink-3); line-height: 1.5; }
+/* 사이드바 알림: 위쪽 오른편으로 연다 */
+.bs-user .bell-panel { top: auto; bottom: 0; right: auto; left: 52px; max-height: min(70vh, 560px); color: var(--bs-ink); box-shadow: 0 16px 48px rgba(12, 32, 24, 0.3); }
+.bs-user .bell-btn { color: #d8e6dd; background: transparent; }
+.bs-user .bell-btn:hover { background: #1a4636; }
