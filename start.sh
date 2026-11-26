@@ -109,9 +109,22 @@ case "${1:-start}" in
 esac
 
 # ---------- 0. 필요한 프로그램 ----------
-command -v python3 >/dev/null || die "python3 가 필요합니다 (3.11 이상)"
-command -v npm >/dev/null || die "Node.js(npm)가 필요합니다 (20 이상)"
-python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' || die "python 3.11 이상이 필요합니다"
+IS_MAC=0; [[ "$(uname)" == Darwin ]] && IS_MAC=1
+# 3.11 이상인 파이썬을 찾는다 (맥 기본 python3 는 3.9라서 brew 쪽을 먼저 본다)
+PY=""
+for c in python3.13 python3.12 python3.11 python3; do
+  if command -v "$c" >/dev/null && "$c" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' 2>/dev/null; then
+    PY="$(command -v "$c")"; break
+  fi
+done
+if [[ -z "$PY" ]]; then
+  [[ "$IS_MAC" == 1 ]] && die "python 3.11 이상이 필요합니다. 맥: brew install python@3.12"
+  die "python 3.11 이상이 필요합니다"
+fi
+if ! command -v npm >/dev/null; then
+  [[ "$IS_MAC" == 1 ]] && die "Node.js(npm)가 필요합니다 (20 이상). 맥: brew install node"
+  die "Node.js(npm)가 필요합니다 (20 이상)"
+fi
 
 # ---------- 1. 최신 코드 ----------
 if [[ "${NO_PULL:-0}" != "1" && -d "$ROOT/.git" ]]; then
@@ -136,7 +149,7 @@ if [[ ! -f "$ENV_FILE" ]]; then
     read -r -p "  첫 관리자 이름 [$admin_name]: " ans || true
     admin_name="${ans:-$admin_name}"
   fi
-  NEW_KEY="$(python3 -c 'import base64,os;print(base64.b64encode(os.urandom(32)).decode())')"
+  NEW_KEY="$("$PY" -c 'import base64,os;print(base64.b64encode(os.urandom(32)).decode())')"
   umask 077
   cat >"$ENV_FILE" <<EOF
 # 반석 서버 설정 (이 파일은 GitHub에 올라가지 않습니다)
@@ -156,9 +169,10 @@ load_env
 # ---------- 3. 백엔드 설치 ----------
 say "백엔드 패키지를 확인합니다"
 if [[ ! -x "$VENV/bin/python" ]]; then
-  python3 -m venv "$VENV" || die "가상환경을 만들지 못했습니다 (Ubuntu라면: sudo apt install python3-venv)"
+  "$PY" -m venv "$VENV" || die "가상환경을 만들지 못했습니다 (Ubuntu라면: sudo apt install python3-venv)"
 fi
-REQ_HASH="$(sha256sum "$BACK/requirements.txt" | cut -c1-16)"
+if command -v sha256sum >/dev/null; then SHA=(sha256sum); else SHA=(shasum -a 256); fi
+REQ_HASH="$("${SHA[@]}" "$BACK/requirements.txt" | cut -c1-16)"
 if [[ "$(cat "$DATA/requirements.hash" 2>/dev/null)" != "$REQ_HASH" ]]; then
   "$VENV/bin/pip" install -q --upgrade pip
   "$VENV/bin/pip" install -q -r "$BACK/requirements.txt"
@@ -191,6 +205,10 @@ say "서버를 시작합니다 (포트 $PORT)"
     >>"$LOG_FILE" 2>&1 &
   echo $! >"$PID_FILE"
 )
+# 맥: 서버가 도는 동안 잠자기 방지 (서버가 멈추면 같이 끝남, 덮개를 닫으면 여전히 잠듦)
+if [[ "$IS_MAC" == 1 ]] && command -v caffeinate >/dev/null; then
+  nohup caffeinate -i -w "$(cat "$PID_FILE")" >/dev/null 2>&1 &
+fi
 
 ok=0
 for _ in $(seq 1 40); do
@@ -212,7 +230,7 @@ if [[ -n "$admin_line" && ! -f "$DATA/admin-notice.shown" ]]; then
   touch "$DATA/admin-notice.shown"
 fi
 
-IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+IP="$( { hostname -I 2>/dev/null || ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true; } | awk '{print $1}')"
 say "준비됐습니다"
 echo "  이 서버에서:   http://localhost:$PORT"
 [[ -n "$IP" ]] && echo "  같은 망에서:   http://$IP:$PORT"

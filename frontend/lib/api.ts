@@ -65,6 +65,7 @@ export function saveSession(s: Session | null) {
   } catch {
     /* 저장소를 못 쓰는 환경이면 이번 접속 동안만 유지 */
   }
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("bansuk-session"));
 }
 
 async function request<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
@@ -420,3 +421,19 @@ export type UpcomingVaccination = {
 export const farmVaccinationApi = {
   upcoming: (t: string, farmId: number) => request<{ items: UpcomingVaccination[]; today: string }>(`/api/farms/${farmId}/vaccination/upcoming?days=14`, {}, t),
 };
+
+export type OverviewFarm = {
+  id: number; name: string; region: string | null; houses: number; entered_today: number; last_input: string | null;
+  lay_rate_7d: number | null; lay_rate_change: number | null; mortality_7d: number; open_cases: number;
+  cases_awaiting_bansuk: number; vacc_overdue: number; vacc_week: number;
+};
+export type Overview = {
+  today: string;
+  farms: OverviewFarm[];
+  todo: {
+    cases: { id: number; farm: string; status: string; dead_count: number | null; reported_at: string | null }[];
+    vaccinations: { farm: string; farm_id: number; flock_id: number; house: string | null; vaccine: string | null; planned: string; status: string }[];
+    missing_input: string[];
+  };
+};
+export const overviewApi = { get: (t: string) => request<Overview>("/api/bansuk/overview", {}, t) };

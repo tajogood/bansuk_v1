@@ -1,5 +1,6 @@
 "use client";
 
+import BansukHome from "@/components/BansukHome";
 import { useCallback, useEffect, useState } from "react";
 import Home from "@/components/Home";
 import HouseEntry from "@/components/HouseEntry";
@@ -44,7 +45,11 @@ export default function Page() {
   useEffect(() => {
     const s = loadSession();
     setSession(s);
-    if (s?.farms.length) setFarmId(s.farms[0].id);
+    const qFarm = Number(new URLSearchParams(window.location.search).get("farm"));
+    if (qFarm) {
+      setFarmId(qFarm);
+      setTab("status");
+    } else if (s?.farms.length) setFarmId(s.farms[0].id);
     setPendingCount(pending().length);
     setReady(true);
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
@@ -198,11 +203,19 @@ export default function Page() {
       />
     );
 
+  const isBansukUser = ["bansuk_vet", "bansuk_staff", "admin"].includes(session.user.role);
+  if (isBansukUser && !new URLSearchParams(typeof window === "undefined" ? "" : window.location.search).get("farm"))
+    return (
+      <main>
+        <BansukHome token={session.token} />
+      </main>
+    );
+
   const houseIdx = day?.houses.findIndex((h) => h.house.id === houseId) ?? -1;
   const current = houseIdx >= 0 && day ? day.houses[houseIdx] : null;
 
   return (
-    <main>
+    <main className={!current && tab !== "input" ? "is-wide" : ""}>
       {current && day ? (
         <HouseEntry
           key={`${current.house.id}-${day.date}`}

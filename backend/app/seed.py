@@ -429,5 +429,29 @@ def _seed_region_cases(db, vet, today) -> None:
     db.commit()
 
 
+def keep_configured_admin() -> None:
+    """설치 때 정한 관리자(BANSUK_ADMIN_PHONE)를 데모 데이터와 함께 남긴다. 이미 있으면 그대로 둔다."""
+    import os
+
+    from .security import find_user_by_phone, set_temp_pin
+
+    phone = os.environ.get("BANSUK_ADMIN_PHONE")
+    if not phone:
+        return
+    db = SessionLocal()
+    try:
+        if find_user_by_phone(db, phone):
+            return
+        u = User(name=os.environ.get("BANSUK_ADMIN_NAME", "반석 관리자"), role="admin")
+        u.set_phone(phone)
+        db.add(u)
+        temp = set_temp_pin(u)
+        db.commit()
+        print(f"설치 때 정한 관리자 계정도 만들었습니다: {phone}, 임시 비밀번호 {temp} (첫 로그인 때 바꿔야 함)")
+    finally:
+        db.close()
+
+
 if __name__ == "__main__":
     seed(reset="--keep" not in sys.argv)
+    keep_configured_admin()

@@ -1,0 +1,135 @@
+/* 반석 데스크탑 틀과 첫 화면. 농장주 입력 화면(휴대폰)과 별개. */
+.bs-app {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  min-height: 100vh;
+  background: #f3f5f3;
+}
+.bs-side {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+  background: #fff;
+  border-right: 1px solid var(--line);
+}
+.bs-brand {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 0 6px 18px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.bs-brand strong { display: block; font-size: 17px; }
+.bs-brand small { color: var(--ink-3); font-size: 12px; }
+.bs-mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: var(--barn);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+}
+.bs-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; overflow-y: auto; }
+.bs-nav a {
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--ink-2);
+  font-size: 15px;
+  text-decoration: none;
+}
+.bs-nav a:hover { background: var(--pad); color: var(--ink); }
+.bs-nav a.is-on { background: #e3eee7; color: var(--barn-dark); font-weight: 700; }
+.bs-user { border-top: 1px solid var(--line); padding: 14px 6px 0; font-size: 14px; }
+.bs-user strong { display: block; }
+.bs-user small { color: var(--ink-3); }
+.bs-user-tools { display: flex; align-items: center; gap: 12px; margin-top: 10px; font-size: 14px; }
+.bs-user-tools .link { background: none; border: 0; padding: 0; color: var(--ink-2); text-decoration: underline; }
+
+/* 반석 틀 안에서는 휴대폰 폭 제한을 풀고, 왼쪽 메뉴가 대신하는 '돌아가기' 링크를 숨긴다 */
+body.bs-on .bs-main main { max-width: none; min-height: 100vh; }
+body.bs-on .cs-back,
+body.bs-on .an-back,
+body.bs-on .rp-back { display: none; }
+body.bs-on .vx-body,
+body.bs-on .fl-body,
+body.bs-on .up-body,
+body.bs-on .lb-body,
+body.bs-on .cs-body { max-width: 1400px; }
+
+/* 반석이 농장 하나를 볼 때 (/?farm=): 넓게 */
+body.bs-on .bs-main .home { max-width: 1400px; margin: 0 auto; padding: 24px 32px 40px; }
+body.bs-on .bs-main .home .head-tools { display: none; }
+body.bs-on .bs-main .home .tabs { max-width: 560px; }
+body.bs-on .bs-main .dash { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+
+/* 농장주도 데스크탑으로 현황을 볼 때는 넓게 (입력 탭은 그대로 휴대폰 폭) */
+@media (min-width: 1000px) {
+  main.is-wide { max-width: 1280px; }
+  main.is-wide .dash { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+}
+
+/* ---------- 반석 첫 화면 ---------- */
+.bh { padding: 28px 32px 48px; max-width: 1600px; margin: 0 auto; }
+.bh-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
+.bh-head h1 { margin: 0; font-size: 26px; }
+.bh-muted { color: var(--ink-3); margin: 2px 0 0; font-size: 14px; }
+.bh-err { color: var(--bad); }
+.bh-btn {
+  padding: 9px 16px;
+  border-radius: 8px;
+  background: var(--barn);
+  color: #fff;
+  font-size: 15px;
+  text-decoration: none;
+}
+.bh-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
+.bh-kpis > div { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.bh-kpis span { display: block; color: var(--ink-2); font-size: 14px; }
+.bh-kpis strong { display: block; font-size: 30px; line-height: 1.2; margin: 4px 0 2px; }
+.bh-kpis small { color: var(--ink-3); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.bh-kpis .is-alert { border-color: #f1b3ab; background: var(--bad-bg); }
+.bh-kpis .is-alert strong { color: var(--bad); }
+.bh-kpis .is-warn { border-color: #efd28a; background: var(--caution-bg); }
+.bh-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+.bh-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.bh-side { display: flex; flex-direction: column; gap: 18px; }
+.bh-card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.bh-card-head h2 { margin: 0; font-size: 17px; }
+.bh-card-head a { font-size: 14px; color: var(--barn); }
+.bh-card-head input { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; width: 220px; }
+.bh-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.bh-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--ink-2);
+  font-size: 13px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  cursor: default;
+}
+.bh-table th[aria-sort] { cursor: pointer; }
+.bh-table td { padding: 10px; border-bottom: 1px solid #edf1ed; white-space: nowrap; }
+.bh-table tbody tr { cursor: pointer; }
+.bh-table tbody tr:hover { background: #f6f9f6; }
+.bh-table a { color: var(--ink); font-weight: 600; text-decoration: none; }
+.bh-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.is-ok { color: var(--barn); }
+.is-warn { color: var(--caution); }
+.is-bad { color: var(--bad); font-weight: 600; }
+.bh-list { list-style: none; margin: 0; padding: 0; }
+.bh-list li + li { border-top: 1px solid #edf1ed; }
+.bh-list a { display: flex; flex-direction: column; padding: 8px 0; color: var(--ink); text-decoration: none; font-size: 14px; }
+.bh-list span { color: var(--ink-3); font-size: 13px; }
+.bh-list li.is-bad strong { color: var(--bad); }
+@media (max-width: 1200px) {
+  .bh-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .bh-grid { grid-template-columns: 1fr; }
+}

@@ -14,7 +14,7 @@ from .bootstrap import ensure_admin
 from .crypto import check_key
 from .db import Base, SessionLocal, engine
 from .services import reminders
-from .routers import admin, analysis, auth, cases, daily, epidemic, flocks, imports, lab, labeling, reports, vaccines
+from .routers import admin, analysis, auth, cases, daily, epidemic, flocks, imports, lab, labeling, overview, reports, vaccines
 
 
 @asynccontextmanager
@@ -65,6 +65,7 @@ app.include_router(vaccines.router)
 app.include_router(lab.router)
 app.include_router(epidemic.router)
 app.include_router(labeling.router)
+app.include_router(overview.router)
 
 
 # 운영: 빌드한 화면(frontend/out)을 같은 서버에서 내보낸다 (포트 하나, CORS 불필요).

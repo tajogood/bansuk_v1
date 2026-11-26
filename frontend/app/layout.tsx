@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import BansukFrame from "@/components/BansukFrame";
 
 export const metadata: Metadata = {
   title: "반석 생산 기록",
@@ -25,7 +26,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <BansukFrame>{children}</BansukFrame>
+      </body>
     </html>
   );
 }
