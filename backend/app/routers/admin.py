@@ -357,6 +357,8 @@ ACTION_LABELS = {
     "lab_unissued": "검사 결과 발행 취소",
     "lab_deleted": "검사 결과 삭제",
     "lab_imported": "성적서 파일 올림",
+    "photos_archived": "지난 부검 사진 올림",
+    "labels_exported": "사진 학습 데이터 내보냄",
     "import_applied": "엑셀 업로드 반영",
     "import_reverted": "엑셀 업로드 되돌림",
     "flock_placed": "입추 등록",

@@ -56,7 +56,7 @@ def _taken_at(img: Image.Image) -> dt.datetime | None:
         return None
 
 
-def save_photo(case_id: int, data: bytes) -> dict:
+def save_photo(case_id: int | str, data: bytes) -> dict:
     """사진을 JPEG로 정리해 원본(최대 2560px)과 썸네일을 저장한다. 위치 정보 등 EXIF는 지운다."""
     if len(data) > MAX_UPLOAD_BYTES:
         raise ValueError("사진 한 장이 너무 큽니다 (25MB 이하)")
@@ -78,7 +78,8 @@ def save_photo(case_id: int, data: bytes) -> dict:
     buf = io.BytesIO()
     th.save(buf, "JPEG", quality=80, optimize=True)
     storage.put(f"{stem}_t.jpg", buf.getvalue())
-    return {"key": f"{stem}.jpg", "thumb_key": f"{stem}_t.jpg", "width": w, "height": h, "taken_at": taken}
+    return {"key": f"{stem}.jpg", "thumb_key": f"{stem}_t.jpg", "width": w, "height": h, "taken_at": taken,
+            "sha256": hashlib.sha256(data).hexdigest()}
 
 
 def _sig(photo_id: int, size: str, exp: int) -> str:

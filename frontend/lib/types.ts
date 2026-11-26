@@ -483,3 +483,60 @@ export type Epidemic = {
   all_regions: string[];
   show_farms: boolean;
 };
+
+// ---------- 부검 사진 태깅 ----------
+export type Pt = [number, number];
+export type PhotoRegionItem = {
+  id?: number;
+  key?: string; // 화면에서만 쓰는 임시 키
+  organ: string;
+  lesions: string[];
+  points: Pt[];
+  source?: "manual" | "auto";
+  status: "suggested" | "confirmed";
+  score?: number | null;
+};
+export type LabelPhotoBrief = {
+  id: number;
+  thumb: string;
+  case_id: number | null;
+  source: "case" | "archive";
+  farm: string;
+  date: string | null;
+  status: "todo" | "done" | "skip";
+  regions: number;
+  suggested: number;
+  diseases: string[];
+  normal: boolean;
+};
+export type LabelPhoto = {
+  id: number;
+  url: string;
+  width: number | null;
+  height: number | null;
+  source: string;
+  date: string | null;
+  status: "todo" | "done" | "skip";
+  diseases: string[];
+  normal: boolean;
+  note: string | null;
+  farm: string;
+  house: string;
+  case: { id: number; suspected: string[]; final_diagnosis: string | null; summary: string | null; findings: { organ: string; lesions: string[] }[] } | null;
+  regions: PhotoRegionItem[];
+  auto_model: string | null;
+  prev_id: number | null;
+  next_id: number | null;
+};
+export type LabelSummary = {
+  total: number;
+  todo: number;
+  done: number;
+  skip: number;
+  suggested: number;
+  organs: { organ: string; count: number }[];
+  target_per_organ: number;
+  diseases: { disease: string; count: number }[];
+  normal: number;
+  model: { enabled: boolean; version: string | null; classes: string[] };
+};

@@ -336,22 +336,62 @@ class CaseEvent(Base):
 
 
 class CasePhoto(Base):
-    """부검 건 사진. 파일은 저장소(개발: 디스크, 운영: S3)에 두고 여기에는 위치만."""
+    """부검 사진. 파일은 저장소(개발: 디스크, 운영: S3)에 두고 여기에는 위치만.
+
+    source: case (부검 건에서 올림) | archive (지난 사진 일괄 업로드, 부검 건 없음)
+    사진 태깅(반석 전용): label_status todo → done (또는 skip), 사진 단위 질병은 diseases,
+    장기 영역은 PhotoRegion.
+    """
 
     __tablename__ = "case_photo"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    case_id: Mapped[int] = mapped_column(ForeignKey("necropsy_case.id"), index=True)
-    stage: Mapped[str] = mapped_column(String(10))  # report(농장 신고 때) | necropsy(부검 때)
+    case_id: Mapped[int | None] = mapped_column(ForeignKey("necropsy_case.id"), index=True)
+    source: Mapped[str] = mapped_column(String(10), default="case")
+    farm_id: Mapped[int | None] = mapped_column(ForeignKey("farm.id"), index=True)  # archive 사진의 농장 (선택)
+    stage: Mapped[str] = mapped_column(String(10))  # report(농장 신고 때) | necropsy(부검 때) | archive
     key: Mapped[str] = mapped_column(String(200))  # 원본 저장 위치
     thumb_key: Mapped[str] = mapped_column(String(200))
+    sha256: Mapped[str | None] = mapped_column(String(64), index=True)  # 같은 사진 두 번 올리기 방지
     width: Mapped[int | None] = mapped_column(Integer)
     height: Mapped[int | None] = mapped_column(Integer)
     taken_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
     caption: Mapped[str | None] = mapped_column(String(200))
-    tags: Mapped[dict] = mapped_column(JSON, default=dict)  # 나중에 태깅: {"organ":..., "lesions":[...], "diagnosis":...}
+    tags: Mapped[dict] = mapped_column(JSON, default=dict)
+    label_status: Mapped[str] = mapped_column(String(10), default="todo", index=True)  # todo | done | skip
+    diseases: Mapped[list] = mapped_column(JSON, default=list)  # 수의사가 정한 질병 코드 (없으면 [])
+    normal: Mapped[bool] = mapped_column(Boolean, default=False)  # 이상 소견 없음
+    label_note: Mapped[str | None] = mapped_column(String(300))
+    labeled_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    labeled_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
+    auto_model: Mapped[str | None] = mapped_column(String(60))  # 자동 표시한 모델 버전
+    auto_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
     uploaded_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
     uploaded_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class PhotoRegion(Base):
+    """사진 속 장기 영역 하나. 좌표는 사진 크기에 대한 비율(0~1)이라 원본·축소본 어디에나 맞는다.
+
+    source: manual (수의사가 그림) | auto (모델이 잡음)
+    status: suggested (모델 제안, 확인 전) | confirmed (수의사 확인·직접 그림)
+    """
+
+    __tablename__ = "photo_region"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    photo_id: Mapped[int] = mapped_column(ForeignKey("case_photo.id"), index=True)
+    organ: Mapped[str] = mapped_column(String(30))
+    lesions: Mapped[list] = mapped_column(JSON, default=list)
+    points: Mapped[list] = mapped_column(JSON, default=list)  # [[x, y], …] 비율
+    source: Mapped[str] = mapped_column(String(10), default="manual")
+    status: Mapped[str] = mapped_column(String(10), default="confirmed")
+    score: Mapped[float | None] = mapped_column(Float)
+    model: Mapped[str | None] = mapped_column(String(60))
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    updated_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
 class Notification(Base):

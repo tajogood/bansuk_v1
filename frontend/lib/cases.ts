@@ -47,6 +47,10 @@ export const ORGANS: Opt[] = [
   { code: "skin_comb", label: k("피부·볏") },
   { code: "leg_joint", label: k("다리·관절") },
   { code: "brain", label: k("뇌") },
+  { code: "oral", label: k("구강·후두") },
+  { code: "crop", label: k("식도·소낭") },
+  { code: "fat", label: k("복강 지방") },
+  { code: "bursa", label: k("F낭") },
 ];
 
 export const LESIONS: Opt[] = [

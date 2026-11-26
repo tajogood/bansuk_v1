@@ -102,6 +102,11 @@ export default function Home(p: Props) {
             {t("최근 유행 질병")}
           </a>
           {p.isBansuk && (
+            <a className="report-link" href="/photos/">
+              {t("부검 사진 태깅")}
+            </a>
+          )}
+          {p.isBansuk && (
             <>
               <a className="report-link" href={`/report/?farm=${p.farmId}`}>
                 {t("계군 성적 보고서 만들기")}

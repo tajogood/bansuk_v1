@@ -1,4 +1,8 @@
 import type {
+  LabelPhoto,
+  LabelPhotoBrief,
+  LabelSummary,
+  PhotoRegionItem,
   Epidemic,
   LabBrief,
   LabDetail,
@@ -349,4 +353,53 @@ export const labApi = {
 export const epidemicApi = {
   get: (t: string, days: number, region?: string | null) =>
     request<Epidemic>(`/api/epidemic?days=${days}${region ? `&region=${encodeURIComponent(region)}` : ""}`, {}, t),
+};
+
+export const labelingApi = {
+  summary: (t: string) => request<LabelSummary>("/api/labeling/summary", {}, t),
+  list: (t: string, status: string, f: { farm_id?: number; organ?: string; disease?: string; offset?: number } = {}) => {
+    const qs = new URLSearchParams({ status, limit: "60", ...Object.fromEntries(Object.entries(f).filter(([, v]) => v !== undefined && v !== "").map(([k, v]) => [k, String(v)])) });
+    return request<{ total: number; items: LabelPhotoBrief[] }>(`/api/labeling/photos?${qs}`, {}, t);
+  },
+  get: (t: string, id: number, queue: string) => request<LabelPhoto>(`/api/labeling/photos/${id}?queue=${queue}`, {}, t),
+  save: (
+    t: string,
+    id: number,
+    b: { regions: PhotoRegionItem[]; diseases: string[]; normal: boolean; note: string | null; status: "done" | "todo" | "skip" },
+  ) =>
+    request<LabelPhoto>(
+      `/api/labeling/photos/${id}`,
+      json("PUT", { ...b, regions: b.regions.map((r) => ({ id: r.id, organ: r.organ, lesions: r.lesions, points: r.points, status: r.status })) }),
+      t,
+    ),
+  auto: (t: string, id: number) => request<LabelPhoto & { added: number }>(`/api/labeling/photos/${id}/auto`, { method: "POST" }, t),
+  autoPending: (t: string) => request<{ queued: number }>("/api/labeling/auto-pending", { method: "POST" }, t),
+  remove: (t: string, id: number) => request<{ ok: boolean }>(`/api/labeling/photos/${id}`, { method: "DELETE" }, t),
+  upload: async (t: string, files: File[], farmId?: number | null) => {
+    const fd = new FormData();
+    files.forEach((f) => fd.append("files", f));
+    if (farmId) fd.append("farm_id", String(farmId));
+    const res = await fetch(`${API_URL}/api/labeling/upload`, {
+      method: "POST",
+      body: fd,
+      headers: { Authorization: `Bearer ${t}`, "Accept-Language": storedLang() },
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(res.status, typeof body.detail === "string" ? body.detail : tr("파일을 올리지 못했습니다"));
+    return body as { saved: number; duplicates: number; failed: { name: string; error: string }[]; auto: boolean };
+  },
+  exportZip: async (t: string) => {
+    const res = await fetch(`${API_URL}/api/labeling/export.zip`, { headers: { Authorization: `Bearer ${t}`, "Accept-Language": storedLang() } });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, typeof body.detail === "string" ? body.detail : tr("학습 데이터를 받지 못했습니다"));
+    }
+    const name = /filename="?([^";]+)"?/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ?? "bansuk-labels.zip";
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 };

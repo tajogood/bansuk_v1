@@ -24,6 +24,7 @@ from ..models import (
     House,
     NecropsyCase,
     Notification,
+    PhotoRegion,
     User,
     UserFarm,
 )
@@ -31,6 +32,7 @@ from ..security import BANSUK_ROLES, accessible_farm_ids, current_user, now, req
 from ..services.flocks import age_days, flock_location_at
 from ..settings import LOCAL_TZ
 from ..storage import check_sig, save_photo, signed_url, storage
+from ..vision import run_background
 
 router = APIRouter(prefix="/api", tags=["cases"])
 
@@ -508,20 +510,23 @@ async def upload_photos(
     if len(files) > MAX_PHOTOS_PER_CALL:
         raise HTTPException(400, "한 번에 30장까지 올릴 수 있습니다")
     stage = "necropsy" if is_bansuk(user) else "report"
-    saved, failed = 0, []
+    saved, failed, new_photos = 0, [], []
     for f in files:
         try:
             info = save_photo(c.id, await f.read())
         except ValueError as e:
             failed.append({"name": f.filename, "error": str(e)})
             continue
-        db.add(CasePhoto(case_id=c.id, stage=stage, uploaded_by=user.id, **info))
+        ph = CasePhoto(case_id=c.id, farm_id=c.farm_id, stage=stage, uploaded_by=user.id, **info)
+        db.add(ph)
+        new_photos.append(ph)
         saved += 1
     if saved:
         _event(db, c, "photos", user, count=saved, stage=stage)
         if stage == "report":
             _notify(db, c, "case_photos", _bansuk_targets(db, c), user, count=saved)
     db.commit()
+    run_background([ph.id for ph in new_photos])  # 장기 인식 모델이 있으면 뒤에서 자동 표시
     return {**_case_dict(db, c, user, detail=True), "upload": {"saved": saved, "failed": failed}}
 
 
@@ -535,6 +540,7 @@ def delete_photo(case_id: int, photo_id: int, user: User = Depends(current_user)
         raise HTTPException(403, "올린 사람만 지울 수 있습니다")
     storage.delete(p.key)
     storage.delete(p.thumb_key)
+    db.query(PhotoRegion).filter(PhotoRegion.photo_id == p.id).delete()
     db.delete(p)
     db.commit()
     return _case_dict(db, c, user, detail=True)

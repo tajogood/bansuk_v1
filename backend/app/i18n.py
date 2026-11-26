@@ -29,6 +29,16 @@ def pick_lang(header: str | None) -> str:
 
 
 EXACT: dict[str, str] = {
+    # 사진 태깅
+    "지난 부검 사진 올림": "Past necropsy photos uploaded", "사진 학습 데이터 내보냄": "Photo training data exported",
+    "반석 계정만 쓸 수 있습니다": "Only Bansuk accounts can use this", "사진을 찾을 수 없습니다": "Photo not found",
+    "저장 상태가 올바르지 않습니다": "Invalid save status", "모르는 장기입니다": "Unknown organ", "모르는 소견입니다": "Unknown lesion",
+    "영역 좌표가 올바르지 않습니다": "Region coordinates are not valid", "모르는 질병입니다": "Unknown disease",
+    "장기 영역을 하나 이상 그리거나, 질병 또는 '이상 없음'을 골라 주세요": "Draw at least one organ region, or choose a disease or 'No abnormal findings'",
+    "확인하지 않은 자동 표시가 남아 있습니다. 확인하거나 지워 주세요": "Some automatic suggestions are not checked yet. Confirm or delete them",
+    "아직 장기 인식 모델이 없습니다": "There is no organ recognition model yet",
+    "태깅을 마친 사진이 아직 없습니다": "No photos have finished tagging yet",
+    "부검 건 사진은 부검 화면에서 지워 주세요": "Delete necropsy case photos from the case screen",
     # 질병 (분석기 계열 이름)
     "고병원성 조류인플루엔자": "Highly pathogenic avian influenza", "저병원성 조류인플루엔자 (H9N2)": "Low pathogenic avian influenza (H9N2)",
     "뉴캐슬병": "Newcastle disease", "전염성 기관지염": "Infectious bronchitis", "전염성 후두기관염": "Infectious laryngotracheitis",
