@@ -78,7 +78,7 @@ body.bs-on .bs-main main {
 .bs-find:hover { border-color: #3d6b59; color: #fff; }
 .bs-find kbd { margin-left: auto; }
 .bs-nav { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
-.bs-group p { margin: 0 10px 4px; color: #7fa08e; font-size: 12px; font-weight: 600; }
+.bs-group p { text-transform: capitalize; margin: 0 10px 4px; color: #7fa08e; font-size: 12px; font-weight: 600; }
 .bs-group a {
   display: flex;
   align-items: center;
