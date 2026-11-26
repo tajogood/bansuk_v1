@@ -41,7 +41,7 @@ def test_query_groups_and_axes(client):
     for s in r["series"]:
         assert all(0 <= y <= 105 for _, y in s["points"])
     r2 = client.post("/api/analysis/query", headers=h, json={"metric": "mortality", "x": "month", "group": "house"}).json()
-    assert len(r2["series"]) == 6
+    assert len(r2["series"]) >= 6  # 데모농장 6동 + 가상농장 동들
     bad = client.post("/api/analysis/query", headers=h, json={"metric": "nope"})
     assert bad.status_code == 400
 
