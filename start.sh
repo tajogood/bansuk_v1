@@ -186,7 +186,9 @@ if [[ -z "${DATABASE_URL:-}" && "$IS_MAC" == 1 ]]; then
   say "PostgreSQL 데이터베이스를 준비합니다"
   for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do [[ -x "$b" ]] && eval "$("$b" shellenv)" && break; done
   command -v brew >/dev/null || die "Homebrew가 필요합니다 (설치.command 를 실행하세요)"
-  brew list postgresql@16 >/dev/null 2>&1 || brew install postgresql@16 || die "PostgreSQL 설치 실패"
+  # brew가 "진행할까요? [y/n]"를 물어도 멈추지 않게 자동으로 y
+  brew list postgresql@16 >/dev/null 2>&1 || HOMEBREW_NO_AUTO_UPDATE=1 brew install postgresql@16 < <(yes) \
+    || die "PostgreSQL 설치 실패"
   PG_BIN="$(brew --prefix postgresql@16)/bin"
   brew services start postgresql@16 >/dev/null 2>&1 || true
   for _ in $(seq 1 30); do "$PG_BIN/pg_isready" -q -h localhost && break; sleep 1; done
