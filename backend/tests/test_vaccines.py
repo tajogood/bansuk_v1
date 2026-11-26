@@ -108,3 +108,54 @@ def test_program_in_use_needs_new_version_and_change_history(client):
     assert r["current"]["label"] is None
     flocks = client.get(f"/api/farms/{client.ids['farm']}/flocks", headers=v).json()["flocks"]
     assert flocks[0]["program"] is None
+
+
+def test_vaccination_reminders(client):
+    from app.services import reminders
+
+    v, f = H(client, "01011111111"), H(client, "01000000000")
+    nd, kill, p = make_program(client, v)
+    fid = client.ids["flock"]
+    client.post(f"/api/flocks/{fid}/program", headers=v, json={"program_id": p["id"], "from_date": (T - dt.timedelta(days=50)).isoformat()})
+    db = SessionLocal()
+    # 오늘: 7·49일령 밀림(49는 2일 전이라 14일 안 → 알림, 7은 44일 전이라 너무 오래돼 알림 없음), 56일령은 5일 뒤라 아직 아님
+    n1 = reminders.run(db, T)
+    farm_notes = client.get("/api/notifications", headers=f).json()["items"]
+    vet_notes = client.get("/api/notifications", headers=v).json()["items"]
+    assert [x["kind"] for x in farm_notes] == ["vaccination_overdue"]
+    assert farm_notes[0]["data"]["age_days"] == 49 and farm_notes[0]["data"]["house"] == "1동"
+    assert {x["kind"] for x in vet_notes} >= {"vaccination_overdue"}
+    # 다시 돌려도 같은 알림은 안 생김
+    assert reminders.run(db, T) == 0
+    # 이틀 뒤: 56일령이 3일 뒤 → 농장에 '곧 접종'
+    n2 = reminders.run(db, T + dt.timedelta(days=2))
+    kinds = [x["kind"] for x in client.get("/api/notifications", headers=f).json()["items"]]
+    assert "vaccination_soon" in kinds
+    # 접종 기록하면 그 항목은 더 알리지 않는다
+    sched = {s["age_days"]: s for s in client.get(f"/api/flocks/{fid}/vaccination", headers=v).json()["schedule"]}
+    client.post(f"/api/flocks/{fid}/vaccinations", headers=v, json={"date": T.isoformat(), "vaccine_id": nd["id"], "program_item_id": sched[56]["item_id"]})
+    before = len(client.get("/api/notifications", headers=f).json()["items"])
+    reminders.run(db, T + dt.timedelta(days=10))  # 56일령이 지났지만 이미 접종함
+    after = [x for x in client.get("/api/notifications", headers=f).json()["items"]][: len(client.get("/api/notifications", headers=f).json()["items"]) - before]
+    assert all(x["data"].get("age_days") != 56 for x in after)
+    db.close()
+    assert n1 >= 2 and n2 >= 1
+    # 농장 화면용 다가오는 접종 (농장주도 볼 수 있음)
+    up = client.get(f"/api/farms/{client.ids['farm']}/vaccination/upcoming", headers=f)
+    assert up.status_code == 200 and any(i["age_days"] == 49 for i in up.json()["items"])
+
+
+def test_weekly_digest_for_bansuk(client):
+    from app.services import reminders
+
+    v = H(client, "01011111111")
+    nd, kill, p = make_program(client, v)
+    fid = client.ids["flock"]
+    client.post(f"/api/flocks/{fid}/program", headers=v, json={"program_id": p["id"], "from_date": (T - dt.timedelta(days=50)).isoformat()})
+    db = SessionLocal()
+    day = T + dt.timedelta(days=5)  # 56일령 접종이 있는 날의 주
+    reminders.run(db, day)
+    reminders.run(db, day)
+    week = [x for x in client.get("/api/notifications", headers=v).json()["items"] if x["kind"] == "vaccination_week"]
+    assert len(week) == 1 and week[0]["data"]["count"] >= 1 and week[0]["data"]["farms"] == 1
+    db.close()

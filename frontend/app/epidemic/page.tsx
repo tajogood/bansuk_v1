@@ -82,7 +82,7 @@ export default function EpidemicPage() {
       </header>
       <div className="cs-body lb-body">
         <p className="cs-muted lb-note">
-          {t("반석이 부검에서 의심한 질병과 PCR·배양 양성 결과를 모았습니다. 같은 농장의 같은 질병은 7일 안이면 한 번만 셉니다. 혈청 항체가는 백신 영향이 있어 넣지 않았습니다.")}
+          {t("반석 부검의 최종 진단(아직 없으면 부검 때 의심한 질병)과 PCR·배양 양성 결과를 모았습니다. 같은 농장의 같은 질병은 7일 안이면 한 번만 셉니다. 혈청 항체가는 백신 영향이 있어 넣지 않았습니다.")}
           {d && !d.show_farms && " " + t("농장 이름은 보여 주지 않습니다.")}
         </p>
         <div className="lb-filters">
@@ -110,7 +110,7 @@ export default function EpidemicPage() {
             <dl className="ep-summary">
               <div><dt>{t("발생")}</dt><dd>{d.total}</dd></div>
               <div><dt>{t("농장")}</dt><dd>{d.farms}</dd></div>
-              <div><dt>{t("검사로 확인")}</dt><dd>{d.confirmed}</dd></div>
+              <div><dt>{t("확진 (최종 진단·검사)")}</dt><dd>{d.confirmed}</dd></div>
             </dl>
             <div className="ep-cols">
               <section className="cs-sec">
@@ -134,7 +134,7 @@ export default function EpidemicPage() {
                           {[
                             t("농장 {n}곳", { n: x.farms }),
                             x.recent ? t("최근 2주 {n}건", { n: x.recent }) : "",
-                            x.confirmed ? t("검사 확인 {n}건", { n: x.confirmed }) : "",
+                            x.confirmed ? t("확진 {n}건", { n: x.confirmed }) : "",
                             x.regions.length ? x.regions.map((r) => `${r.region} ${r.count}`).join(", ") : "",
                             x.last ? t("마지막 {d}", { d: x.last }) : "",
                           ].filter(Boolean).join(" · ")}
@@ -182,7 +182,7 @@ export default function EpidemicPage() {
                             <small>
                               {[r.farm, r.region, tr(SOURCE[r.source])].filter(Boolean).join(" · ")}
                             </small>
-                            {r.confirmed && <small className="ep-conf">{t("검사 확인")}</small>}
+                            {r.confirmed ? <small className="ep-conf">{t("확진")}</small> : <small>{t("의심")}</small>}
                           </li>
                         );
                       })}

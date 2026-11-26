@@ -1135,3 +1135,60 @@ main {
   font-weight: 700;
   text-decoration: none;
 }
+
+/* 농장 홈: 접종 예정 */
+.vx-card {
+  margin: 0 0 14px;
+  padding: 14px 16px 10px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--barn);
+  border-radius: 12px;
+  background: #fff;
+}
+.vx-card h2 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+.vx-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.vx-card li + li {
+  border-top: 1px solid #edf1ee;
+}
+.vx-card a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 0;
+  color: inherit;
+  text-decoration: none;
+}
+.vx-when {
+  flex: none;
+  width: 68px;
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.vx-card li.is-soon .vx-when {
+  color: var(--barn);
+}
+.vx-card li.is-overdue .vx-when {
+  color: #9b2c22;
+}
+.vx-what {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.vx-what small {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.vx-note {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+}

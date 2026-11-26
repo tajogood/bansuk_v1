@@ -70,6 +70,9 @@ export const LESIONS: Opt[] = [
   { code: "parasite", label: k("기생충") },
 ];
 
+/** 최종 진단에서만 고르는 것 */
+export const UNDETERMINED: Opt = { code: "undetermined", label: k("원인 미확정") };
+
 export const DISEASES: Opt[] = [
   { code: "hpai", label: k("고병원성 조류인플루엔자") },
   { code: "lpai", label: k("저병원성 조류인플루엔자 (H9N2)") },
@@ -144,6 +147,22 @@ export function timeAgo(iso: string | null | undefined): string {
   return rtf.format(-Math.round(sec / 86400), "day");
 }
 
+function shortDate(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(`${iso}T00:00:00`);
+  return new Intl.DateTimeFormat(locale(), { month: "short", day: "numeric", weekday: "short" }).format(d);
+}
+
+/** 알림을 누르면 갈 곳 */
+export function notificationHref(n: { kind: string; case_id: number | null; data: Record<string, unknown> | null }): string {
+  const d = n.data ?? {};
+  if (d.lab_id) return `/lab/?id=${d.lab_id}`;
+  if (n.kind === "vaccination_week") return "/vaccines/";
+  if (d.flock_id && n.kind.startsWith("vaccination")) return `/vaccination/?flock=${d.flock_id}`;
+  if (n.case_id) return `/cases/?id=${n.case_id}`;
+  return "#";
+}
+
 /** 알림 한 줄 */
 export function notificationText(kind: string, d: Record<string, unknown>): string {
   const v = (x: unknown) => (x === null || x === undefined ? "" : String(x));
@@ -171,6 +190,14 @@ export function notificationText(kind: string, d: Record<string, unknown>): stri
       return tr("검사 결과가 나왔습니다 ({what})", { what: [v(d.house), v(d.target)].filter(Boolean).join(", ") || v(d.farm) });
     case "lab_updated":
       return tr("검사 결과가 수정됐습니다 ({what})", { what: [v(d.house), v(d.target)].filter(Boolean).join(", ") || v(d.farm) });
+    case "case_diagnosed":
+      return tr("최종 진단이 나왔습니다 ({house})", { house: v(d.house) || v(d.farm) });
+    case "vaccination_soon":
+      return tr("{date} {house} {vaccine} 접종 예정 ({age}일령)", { date: shortDate(v(d.planned)), house: v(d.house), vaccine: v(d.vaccine), age: v(d.age_days) });
+    case "vaccination_overdue":
+      return tr("{farm} {house} {vaccine} 접종이 밀렸습니다 (예정 {date})", { farm: v(d.farm), house: v(d.house), vaccine: v(d.vaccine), date: shortDate(v(d.planned)) });
+    case "vaccination_week":
+      return tr("이번 주 접종 예정 {count}건 (농장 {farms}곳)", { count: v(d.count), farms: v(d.farms) });
     case "case_cancelled":
       return tr("{farm} {house} 부검 건이 취소됐습니다", { farm: v(d.farm), house: v(d.house) });
     default:

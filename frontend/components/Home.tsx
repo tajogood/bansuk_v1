@@ -1,6 +1,7 @@
 "use client";
 
 import Dashboard from "./Dashboard";
+import UpcomingVaccinations from "./UpcomingVaccinations";
 import HomeCases from "./HomeCases";
 import LangToggle from "./LangToggle";
 import NotificationBell from "./NotificationBell";
@@ -91,6 +92,7 @@ export default function Home(p: Props) {
         <HomeCases token={p.token} farmId={p.farmId} isBansuk={p.isBansuk} />
       ) : p.tab === "status" ? (
         <>
+          <UpcomingVaccinations token={p.token} farmId={p.farmId} />
           <Dashboard token={p.token} farmId={p.farmId} date={p.date} />
           <a className="report-link" href={`/flocks/?farm=${p.farmId}`}>
             {t("계군 관리 (입추·이동·출하)")}

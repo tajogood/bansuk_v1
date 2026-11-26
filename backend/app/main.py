@@ -1,3 +1,4 @@
+import asyncio
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -12,6 +13,7 @@ from .i18n import I18nJSONResponse, http_exception_handler, lang_middleware
 from .bootstrap import ensure_admin
 from .crypto import check_key
 from .db import Base, SessionLocal, engine
+from .services import reminders
 from .routers import admin, analysis, auth, cases, daily, epidemic, flocks, imports, lab, labeling, reports, vaccines
 
 
@@ -22,7 +24,10 @@ async def lifespan(_: FastAPI):
     Base.metadata.create_all(engine)
     with SessionLocal() as db:
         ensure_admin(db)
+    task = asyncio.create_task(reminders.loop()) if reminders.enabled() else None
     yield
+    if task:
+        task.cancel()
 
 
 app = FastAPI(

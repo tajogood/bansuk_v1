@@ -263,6 +263,8 @@ export type CaseResult = {
   summary: string | null;
   advice: string | null;
   final_diagnosis: string | null;
+  final_diseases?: string[];
+  diagnosed_at?: string | null;
   internal_note?: string | null;
 };
 export type CasePhotoItem = {
@@ -289,6 +291,7 @@ export type NecropsyCase = {
   id: number;
   status: CaseStatus;
   awaiting: "farm" | "bansuk" | null;
+  needs_diagnosis?: boolean;
   farm: { id: number; name: string; region: string | null } | null;
   house: { id: number; name: string } | null;
   flock: { id: number; placed_on: string; age_days: number } | null;
@@ -434,7 +437,7 @@ export type LabDetail = LabBrief & {
   can_edit: boolean;
   samples: LabSampleRow[];
   sero: SeroRow[];
-  case: { id: number; status: string; final_diagnosis: string | null; suspected: string[] } | null;
+  case: { id: number; status: string; final_diagnosis: string | null; suspected: string[]; final_diseases?: string[] } | null;
 };
 export type LabIn = {
   kind: LabKind;
@@ -522,7 +525,7 @@ export type LabelPhoto = {
   note: string | null;
   farm: string;
   house: string;
-  case: { id: number; suspected: string[]; final_diagnosis: string | null; summary: string | null; findings: { organ: string; lesions: string[] }[] } | null;
+  case: { id: number; suspected: string[]; final_diagnosis: string | null; final_diseases?: string[]; summary: string | null; findings: { organ: string; lesions: string[] }[] } | null;
   regions: PhotoRegionItem[];
   auto_model: string | null;
   prev_id: number | null;

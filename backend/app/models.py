@@ -316,7 +316,10 @@ class NecropsyCase(Base):
     summary: Mapped[str | None] = mapped_column(Text)  # 소견 요약 (농장에 보임)
     advice: Mapped[str | None] = mapped_column(Text)  # 농장 권고 사항 (농장에 보임)
     internal_note: Mapped[str | None] = mapped_column(Text)  # 반석 내부 메모 (농장에 안 보임)
-    final_diagnosis: Mapped[str | None] = mapped_column(Text)  # 검사 결과 확정 후
+    final_diagnosis: Mapped[str | None] = mapped_column(Text)  # 최종 진단 설명 (농장에 보임)
+    final_diseases: Mapped[list] = mapped_column(JSON, default=list)  # 최종 진단 질병 코드 (통계·유행 질병에 씀)
+    diagnosed_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
+    diagnosed_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
     shared_at: Mapped[dt.datetime | None] = mapped_column(DateTime)
     updated_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
@@ -403,6 +406,7 @@ class Notification(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("app_user.id"), index=True)
     case_id: Mapped[int | None] = mapped_column(ForeignKey("necropsy_case.id"))
     kind: Mapped[str] = mapped_column(String(30))
+    dedupe_key: Mapped[str | None] = mapped_column(String(80), index=True)  # 같은 알림 두 번 안 보내기 (접종 알림 등)
     data: Mapped[dict | None] = mapped_column(JSON)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
     read_at: Mapped[dt.datetime | None] = mapped_column(DateTime)

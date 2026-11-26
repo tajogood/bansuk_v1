@@ -45,4 +45,5 @@ DISEASE_LABELS = {
     "fatty_liver": "지방간 출혈 증후군", "egg_peritonitis": "난황성 복막염", "red_mite": "닭진드기",
     "heat_stress": "열 스트레스", "ibd": "전염성 F낭병 (감보로)", "ae": "조류뇌척수염", "coryza": "전염성 코라이자",
     "apv": "조류 메타뉴모바이러스 (APV)", "ciav": "닭 전염성 빈혈 (CIAV)", "reo": "레오바이러스",
+    "undetermined": "원인 미확정",
 }

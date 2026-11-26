@@ -174,6 +174,7 @@ def get_photo(pid: int, queue: str = Query("todo"), user: User = Depends(bansuk)
         "farm": farm.name if farm else "", "house": house.name if house else "",
         "case": (
             {"id": case.id, "suspected": case.suspected or [], "final_diagnosis": case.final_diagnosis,
+             "final_diseases": case.final_diseases or [],
              "summary": case.summary, "findings": case.findings or []}
             if case else None
         ),

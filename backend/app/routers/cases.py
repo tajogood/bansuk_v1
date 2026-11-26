@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..db import get_db
+from ..lab_catalog import DISEASE_LABELS
 from ..models import (
     CaseEvent,
     CasePhoto,
@@ -165,6 +166,8 @@ def _case_dict(db: Session, c: NecropsyCase, user: User, detail: bool = False) -
         "vet": {"id": vet.id, "name": vet.name} if vet else None,
         "shared_at": _utc(c.shared_at),
         "updated_at": _utc(c.updated_at),
+        # 부검은 끝났는데 최종 진단(질병 코드)을 아직 안 정한 건 (반석 목록의 '최종 진단 대기')
+        "needs_diagnosis": c.status in ("done", "shared") and not (c.final_diseases or []),
     }
     if show_result:
         d["result"] = {
@@ -176,6 +179,8 @@ def _case_dict(db: Session, c: NecropsyCase, user: User, detail: bool = False) -
             "summary": c.summary,
             "advice": c.advice,
             "final_diagnosis": c.final_diagnosis,
+            "final_diseases": c.final_diseases or [],
+            "diagnosed_at": _utc(c.diagnosed_at),
         }
         if bansuk:
             d["result"]["internal_note"] = c.internal_note
@@ -451,7 +456,37 @@ class ResultIn(BaseModel):
     summary: str | None = Field(default=None, max_length=5000)
     advice: str | None = Field(default=None, max_length=5000)
     internal_note: str | None = Field(default=None, max_length=5000)
+    final_diagnosis: str | None = Field(default=None, max_length=1000)  # 예전 화면 호환: 보낼 때만 바꾼다
+
+
+class DiagnosisIn(BaseModel):
+    final_diseases: list[str] = Field(default_factory=list, max_length=10)
     final_diagnosis: str | None = Field(default=None, max_length=1000)
+
+
+@router.put("/cases/{case_id}/diagnosis")
+def save_diagnosis(case_id: int, body: DiagnosisIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """반석: 최종 진단 (검사 결과가 나온 뒤 정하는 경우가 많아 부검 결과와 따로 저장한다)."""
+    _need_bansuk(user)
+    c = _get_case(db, user, case_id)
+    if c.status not in ("done", "shared"):
+        raise HTTPException(400, "부검 결과를 먼저 저장해 주세요")
+    codes = list(dict.fromkeys(body.final_diseases))
+    if any(d not in DISEASE_LABELS for d in codes):
+        raise HTTPException(400, "모르는 질병입니다")
+    if "undetermined" in codes and len(codes) > 1:
+        raise HTTPException(400, "'원인 미확정'은 다른 질병과 함께 고를 수 없습니다")
+    first = not (c.final_diseases or [])
+    c.final_diseases = codes
+    c.final_diagnosis = (body.final_diagnosis or "").strip() or None
+    c.diagnosed_at = now() if codes else None
+    c.diagnosed_by = user.id if codes else None
+    if codes:
+        _event(db, c, "diagnosed", user, diseases=codes)
+        if c.status == "shared":
+            _notify(db, c, "case_diagnosed" if first else "case_result_updated", _farm_targets(db, c), user)
+    db.commit()
+    return _case_dict(db, c, user, detail=True)
 
 
 @router.put("/cases/{case_id}/result")
@@ -467,7 +502,9 @@ def save_result(case_id: int, body: ResultIn, user: User = Depends(current_user)
     c.findings = [f.model_dump() for f in body.findings]
     c.suspected = [s[:80] for s in body.suspected]
     c.samples = [s[:40] for s in body.samples]
-    c.summary, c.advice, c.internal_note, c.final_diagnosis = body.summary, body.advice, body.internal_note, body.final_diagnosis
+    c.summary, c.advice, c.internal_note = body.summary, body.advice, body.internal_note
+    if "final_diagnosis" in body.model_fields_set:
+        c.final_diagnosis = body.final_diagnosis
     if not c.vet_id:
         c.vet_id = user.id
     if first:
@@ -575,6 +612,15 @@ def notifications(user: User = Depends(current_user), db: Session = Depends(get_
 @router.get("/notifications/count")
 def notification_count(user: User = Depends(current_user), db: Session = Depends(get_db)):
     return {"unread": db.query(Notification).filter(Notification.user_id == user.id, Notification.read_at.is_(None)).count()}
+
+
+@router.post("/notifications/{nid}/read")
+def read_one(nid: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    n = db.get(Notification, nid)
+    if n and n.user_id == user.id and n.read_at is None:
+        n.read_at = now()
+        db.commit()
+    return notification_count(user, db)
 
 
 @router.post("/notifications/read-all")

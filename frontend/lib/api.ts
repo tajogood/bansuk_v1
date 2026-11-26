@@ -203,9 +203,11 @@ export const casesApi = {
   confirm: (t: string, id: number, b: { at: string; vet_id?: number | null; message?: string | null }) => post(`/api/cases/${id}/confirm`, t, b),
   message: (t: string, id: number, text: string) => post(`/api/cases/${id}/message`, t, { text }),
   cancel: (t: string, id: number, reason: string | null) => post(`/api/cases/${id}/cancel`, t, { reason }),
-  result: (t: string, id: number, b: Omit<CaseResult, "performed_at"> & { performed_at?: string | null }) =>
+  result: (t: string, id: number, b: Omit<CaseResult, "performed_at" | "final_diagnosis"> & { performed_at?: string | null; final_diagnosis?: string | null }) =>
     request<NecropsyCase>(`/api/cases/${id}/result`, { method: "PUT", body: JSON.stringify(b) }, t),
   share: (t: string, id: number) => post(`/api/cases/${id}/share`, t),
+  diagnosis: (t: string, id: number, b: { final_diseases: string[]; final_diagnosis: string | null }) =>
+    request<NecropsyCase>(`/api/cases/${id}/diagnosis`, { method: "PUT", body: JSON.stringify(b) }, t),
   deletePhoto: (t: string, id: number, photoId: number) =>
     request<NecropsyCase>(`/api/cases/${id}/photos/${photoId}`, { method: "DELETE" }, t),
   /** 사진 올리기. FormData라 Content-Type은 브라우저가 정한다. */
@@ -235,6 +237,7 @@ export const notificationsApi = {
   list: (t: string) => request<{ unread: number; items: NotificationItem[] }>("/api/notifications", {}, t),
   count: (t: string) => request<{ unread: number }>("/api/notifications/count", {}, t),
   readAll: (t: string) => request<{ unread: number }>("/api/notifications/read-all", { method: "POST" }, t),
+  read: (t: string, id: number) => request<{ unread: number }>(`/api/notifications/${id}/read`, { method: "POST" }, t),
 };
 
 type FlockRes = { flock: ManagedFlock; linked_records: number };
@@ -402,4 +405,18 @@ export const labelingApi = {
     a.click();
     URL.revokeObjectURL(url);
   },
+};
+
+export type UpcomingVaccination = {
+  item_id: number;
+  flock_id: number;
+  planned: string;
+  age_days: number;
+  status: "overdue" | "due" | "upcoming" | "done";
+  house: string | null;
+  vaccine: { id: number; name: string } | null;
+  route: string | null;
+};
+export const farmVaccinationApi = {
+  upcoming: (t: string, farmId: number) => request<{ items: UpcomingVaccination[]; today: string }>(`/api/farms/${farmId}/vaccination/upcoming?days=14`, {}, t),
 };

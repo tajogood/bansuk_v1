@@ -1,9 +1,10 @@
 """최근 유행 질병: 반석이 본 부검 건과 검사 결과를 기간·지역·질병별로 모은다.
 
 한 '발생'은 (농장, 질병, 날짜) 하나다. 출처:
-- 부검: 부검을 마친 건(done·shared)의 의심 질병 (부검일 기준)
+- 부검: 부검을 마친 건(done·shared)의 최종 진단 질병, 최종 진단 전이면 의심 질병 (부검일 기준)
 - 검사: 발행된 PCR·배양 결과 중 대조가 아닌 시료가 양성인 것 (채취일 기준, 질병 코드가 있는 것)
-같은 농장·질병이 부검과 검사에 함께 나오면 7일 안이면 한 번만 센다 (검사 확인으로 표시).
+같은 농장·질병이 부검과 검사에 함께 나오면 7일 안이면 한 번만 센다.
+'확인'은 수의사가 최종 진단했거나 검사에서 양성이 나온 발생이다.
 혈청 항체가는 백신 영향이 커서 넣지 않는다.
 
 반석은 농장 이름까지 보고, 농장은 농장 이름 없이 지역·질병만 본다.
@@ -34,10 +35,12 @@ def collect(db: Session, start: dt.date, end: dt.date, region: str | None = None
         db.query(NecropsyCase)
         .filter(NecropsyCase.status.in_(("done", "shared")), NecropsyCase.performed_at >= t0, NecropsyCase.performed_at < t1)
     ):
-        for d in c.suspected or []:
+        final = [d for d in (c.final_diseases or []) if d != "undetermined"]
+        codes = final if c.final_diseases else (c.suspected or [])  # 최종 진단이 있으면 그것만, 없으면 의심 질병
+        for d in codes:
             if isinstance(d, str) and d and d.isascii():
                 events.append({"farm_id": c.farm_id, "disease": d, "date": c.performed_at.date(), "source": "necropsy",
-                               "case_id": c.id, "lab_id": None, "confirmed": False})
+                               "case_id": c.id, "lab_id": None, "confirmed": bool(final)})
     pos = {
         sid
         for (sid,) in db.query(LabSample.submission_id)

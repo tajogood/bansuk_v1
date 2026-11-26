@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { notificationsApi } from "@/lib/api";
-import { notificationText, timeAgo } from "@/lib/cases";
+import { notificationHref, notificationText, timeAgo } from "@/lib/cases";
 import { useLang, useT } from "@/lib/i18n";
 import type { NotificationItem } from "@/lib/types";
 
@@ -97,7 +97,16 @@ export default function NotificationBell({ token }: { token: string }) {
             <ul>
               {items.map((n) => (
                 <li key={n.id}>
-                  <a href={n.data?.lab_id ? `/lab/?id=${n.data.lab_id}` : n.case_id ? `/cases/?id=${n.case_id}` : "#"} className={n.read ? "" : "is-unread"}>
+                  <a
+                    href={notificationHref(n)}
+                    className={n.read ? "" : "is-unread"}
+                    onClick={(e) => {
+                      if (n.read) return;
+                      e.preventDefault();
+                      const href = notificationHref(n);
+                      notificationsApi.read(token, n.id).catch(() => {}).finally(() => { window.location.href = href; });
+                    }}
+                  >
                     <span>{notificationText(n.kind, n.data)}</span>
                     <small>{timeAgo(n.at)}</small>
                   </a>

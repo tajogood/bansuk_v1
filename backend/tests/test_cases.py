@@ -143,3 +143,38 @@ def test_farm_photo_at_report_notifies_bansuk(client):
     p = r.json()["photos"][0]
     assert p["stage"] == "report" and max(p["width"], p["height"]) == 2560
     assert unread(client, vet) == before + 1
+
+
+def test_final_diagnosis_codes(client):
+    farm, vet = H(client, "01000000000"), H(client, "01011111111")
+    cid = client.post("/api/cases", headers=farm, json={"farm_id": client.ids["farm"], "dead_count": 30}).json()["id"]
+    # 부검 전에는 진단 못 함
+    assert client.put(f"/api/cases/{cid}/diagnosis", headers=vet, json={"final_diseases": ["ib"]}).status_code == 400
+    res = {"birds_examined": 4, "suspected": ["ib", "colibacillosis"], "samples": ["pcr"], "summary": "기관 점액", "final_diagnosis": "옛 화면 값"}
+    client.put(f"/api/cases/{cid}/result", headers=vet, json=res)
+    # 결과를 다시 저장할 때 final_diagnosis를 안 보내면 그대로 둔다
+    client.put(f"/api/cases/{cid}/result", headers=vet, json={k: v for k, v in res.items() if k != "final_diagnosis"})
+    c = client.get(f"/api/cases/{cid}", headers=vet).json()
+    assert c["result"]["final_diagnosis"] == "옛 화면 값" and c["needs_diagnosis"] is True
+    client.post(f"/api/cases/{cid}/share", headers=vet)
+    # 유행 질병: 최종 진단 전에는 의심 질병 2개
+    e = client.get("/api/epidemic?days=30", headers=vet).json()
+    assert {d["disease"] for d in e["diseases"]} == {"ib", "colibacillosis"} and e["confirmed"] == 0
+    # 검증
+    assert client.put(f"/api/cases/{cid}/diagnosis", headers=vet, json={"final_diseases": ["xx"]}).status_code == 400
+    assert client.put(f"/api/cases/{cid}/diagnosis", headers=vet, json={"final_diseases": ["undetermined", "ib"]}).status_code == 400
+    assert client.put(f"/api/cases/{cid}/diagnosis", headers=farm, json={"final_diseases": ["ib"]}).status_code == 403
+    r = client.put(f"/api/cases/{cid}/diagnosis", headers=vet, json={"final_diseases": ["ib"], "final_diagnosis": "IB (RT-PCR 양성)"})
+    assert r.status_code == 200
+    d = r.json()
+    assert d["result"]["final_diseases"] == ["ib"] and d["needs_diagnosis"] is False and d["result"]["diagnosed_at"]
+    assert d["events"][-1]["kind"] == "diagnosed"
+    # 공유한 건이라 농장에 알림, 농장도 진단을 봄
+    assert client.get("/api/notifications", headers=farm).json()["items"][0]["kind"] == "case_diagnosed"
+    assert client.get(f"/api/cases/{cid}", headers=farm).json()["result"]["final_diseases"] == ["ib"]
+    # 유행 질병: 최종 진단만, 확인으로 셈
+    e = client.get("/api/epidemic?days=30", headers=vet).json()
+    assert [d["disease"] for d in e["diseases"]] == ["ib"] and e["confirmed"] == 1
+    # 원인 미확정이면 유행 질병에서 빠진다
+    client.put(f"/api/cases/{cid}/diagnosis", headers=vet, json={"final_diseases": ["undetermined"]})
+    assert client.get("/api/epidemic?days=30", headers=vet).json()["total"] == 0

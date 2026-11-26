@@ -18,7 +18,7 @@ EVENT_SOURCES = {
     "necropsy": {
         "label": "부검 기록",
         "metrics": {
-            "cases": {"label": "부검 건수", "unit": "건", "note": "의심 질병이 여러 개면 질병마다 한 번씩 셉니다"},
+            "cases": {"label": "부검 건수", "unit": "건", "note": "최종 진단(없으면 의심 질병) 기준. 질병이 여러 개면 질병마다 한 번씩 셉니다"},
             "dead_reported": {"label": "신고 폐사수", "unit": "수"},
         },
         "groups": {"disease": "질병별", "farm": "농장별", "house": "계사별", "region": "지역별", "none": "전체 합계"},
@@ -86,7 +86,8 @@ def run_events(db: Session, q: dict, allowed_farm_ids: set[int] | None) -> dict:
             qry = qry.filter(NecropsyCase.farm_id.in_(farm_ids))
         for c in qry:
             day = c.performed_at.date()
-            dis = [d for d in (c.suspected or []) if isinstance(d, str) and d.isascii()] or ["other"]
+            src = c.final_diseases if c.final_diseases else c.suspected  # 최종 진단 우선
+            dis = [d for d in (src or []) if isinstance(d, str) and d.isascii()] or ["other"]
             for d in dis if group == "disease" or want_disease else dis[:1]:
                 rows.append((c.farm_id, c.house_id, c.flock_id, day, d, None, {"cases": 1, "dead": c.dead_count or 0}))
     else:

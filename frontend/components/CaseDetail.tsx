@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import CasePhotos from "./CasePhotos";
 import { casesApi, labApi } from "@/lib/api";
-import { DISEASES, LESIONS, ONSET, ORGANS, SAMPLES, STATUS_LABEL, SYMPTOMS, fmtDateTime, label, type Opt } from "@/lib/cases";
+import { DISEASES, LESIONS, ONSET, ORGANS, SAMPLES, STATUS_LABEL, SYMPTOMS, UNDETERMINED, fmtDateTime, label, type Opt } from "@/lib/cases";
 import { tr, useT } from "@/lib/i18n";
 import { antigenName, kindName } from "@/lib/lab";
 import type { CaseEventItem, CaseResult, Finding, LabBrief, NecropsyCase } from "@/lib/types";
@@ -124,6 +124,10 @@ function eventText(e: CaseEventItem): string {
       return tr("결과를 고쳤습니다");
     case "shared":
       return tr("결과를 농장에 공유했습니다");
+    case "diagnosed":
+      return tr("최종 진단: {dx}", {
+        dx: ((d.diseases as string[]) ?? []).map((x) => (x === UNDETERMINED.code ? tr(UNDETERMINED.label) : label(DISEASES, x))).join(", "),
+      });
     case "cancelled":
       return tr("{by}님이 취소했습니다", { by });
     default:
@@ -184,10 +188,13 @@ function ResultView({ r, bansuk }: { r: CaseResult; bansuk: boolean }) {
           <p>{r.samples.map((s) => label(SAMPLES, s)).join(", ")}</p>
         </>
       )}
-      {r.final_diagnosis && (
+      {!bansuk && ((r.final_diseases?.length ?? 0) > 0 || r.final_diagnosis) && (
         <>
           <h3>{t("최종 진단")}</h3>
-          <p className="cs-strong">{r.final_diagnosis}</p>
+          {(r.final_diseases?.length ?? 0) > 0 && (
+            <p className="cs-strong">{r.final_diseases!.map((d) => (d === UNDETERMINED.code ? tr(UNDETERMINED.label) : label(DISEASES, d))).join(", ")}</p>
+          )}
+          {r.final_diagnosis && <p className="cs-text">{r.final_diagnosis}</p>}
         </>
       )}
       {r.advice && (
@@ -218,7 +225,6 @@ function ResultForm({ c, token, onSaved, onCancel }: { c: NecropsyCase; token: s
   const [summary, setSummary] = useState(r?.summary ?? "");
   const [advice, setAdvice] = useState(r?.advice ?? "");
   const [internal, setInternal] = useState(r?.internal_note ?? "");
-  const [finalDx, setFinalDx] = useState(r?.final_diagnosis ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -238,7 +244,6 @@ function ResultForm({ c, token, onSaved, onCancel }: { c: NecropsyCase; token: s
         summary: summary || null,
         advice: advice || null,
         internal_note: internal || null,
-        final_diagnosis: finalDx || null,
       });
       onSaved(out);
     } catch (e) {
@@ -296,10 +301,6 @@ function ResultForm({ c, token, onSaved, onCancel }: { c: NecropsyCase; token: s
         <textarea rows={3} value={advice} onChange={(e) => setAdvice(e.target.value)} />
       </label>
       <label>
-        {t("최종 진단 (검사 결과가 나오면)")}
-        <input value={finalDx} onChange={(e) => setFinalDx(e.target.value)} />
-      </label>
-      <label>
         {t("반석 내부 메모 (농장에 안 보임)")}
         <textarea rows={2} value={internal} onChange={(e) => setInternal(e.target.value)} />
       </label>
@@ -313,6 +314,100 @@ function ResultForm({ c, token, onSaved, onCancel }: { c: NecropsyCase; token: s
         </button>
       </div>
     </div>
+  );
+}
+
+/** 최종 진단 (반석): 부검 결과를 저장한 뒤, 보통 검사 결과가 나오면 정한다 */
+function DiagnosisBox({ c, token, onChange }: { c: NecropsyCase; token: string; onChange: (c: NecropsyCase) => void }) {
+  const t = useT();
+  const r = c.result!;
+  const has = (r.final_diseases?.length ?? 0) > 0;
+  const [open, setOpen] = useState(!has);
+  const [codes, setCodes] = useState<string[]>(r.final_diseases ?? []);
+  const [text, setText] = useState(r.final_diagnosis ?? "");
+  const [labs, setLabs] = useState<LabBrief[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    labApi.list(token, { case_id: c.id }).then((x) => setLabs(x.items)).catch(() => {});
+  }, [token, c.id]);
+  const positives = labs.filter((l) => l.status === "issued" && l.positive && l.disease);
+  const options = [...DISEASES, UNDETERMINED];
+  const toggle = (code: string) =>
+    setCodes((x) => (code === UNDETERMINED.code ? (x.includes(code) ? [] : [code]) : x.includes(code) ? x.filter((y) => y !== code) : [...x.filter((y) => y !== UNDETERMINED.code), code]));
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const out = await casesApi.diagnosis(token, c.id, { final_diseases: codes, final_diagnosis: text.trim() || null });
+      onChange(out);
+      setOpen(false);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className={`cs-sec cs-dx${has ? "" : " is-pending"}`}>
+      <div className="cs-sec-head">
+        <h2>{t("최종 진단")}</h2>
+        {has && !open && (
+          <button type="button" onClick={() => setOpen(true)}>{t("진단 고치기")}</button>
+        )}
+      </div>
+      {!open ? (
+        <p className="cs-strong">{codes.map((d) => (d === UNDETERMINED.code ? tr(UNDETERMINED.label) : label(DISEASES, d))).join(", ")}</p>
+      ) : (
+        <div className="cs-form">
+          <p className="cs-muted">
+            {t("검사 결과까지 보고 질병을 고르세요. 유행 질병 통계와 사진 학습에 이 진단이 쓰입니다.")}
+            {c.status === "shared" && " " + t("저장하면 농장에 알림이 갑니다.")}
+          </p>
+          {(r.suspected.length > 0 || positives.length > 0) && (
+            <div className="cs-dx-hints">
+              {r.suspected.length > 0 && (
+                <p>
+                  {t("부검 때 의심")}:{" "}
+                  {r.suspected.filter((s) => DISEASES.some((d) => d.code === s)).map((s) => (
+                    <button key={s} type="button" className="link-btn" onClick={() => !codes.includes(s) && toggle(s)}>{label(DISEASES, s)}</button>
+                  ))}
+                </p>
+              )}
+              {positives.length > 0 && (
+                <p>
+                  {t("검사 양성")}:{" "}
+                  {positives.map((l) => (
+                    <button key={l.id} type="button" className="link-btn" onClick={() => !codes.includes(l.disease!) && toggle(l.disease!)}>
+                      {label(DISEASES, l.disease!)} ({l.target || l.method})
+                    </button>
+                  ))}
+                </p>
+              )}
+            </div>
+          )}
+          <div className="cs-chips cs-chips-sm">
+            {options.map((o) => (
+              <button key={o.code} type="button" aria-pressed={codes.includes(o.code)} onClick={() => toggle(o.code)}>
+                {tr(o.label)}
+              </button>
+            ))}
+          </div>
+          <label>
+            {t("진단 설명 (농장에 보임, 선택)")}
+            <input value={text} onChange={(e) => setText(e.target.value)} placeholder={t("예: IB (RT-PCR 양성), 2차 대장균 감염")} />
+          </label>
+          {codes.includes("hpai") && <p className="warn warn-error">{t("고병원성 조류인플루엔자 의심 시 즉시 가축방역기관(1588-9060)에 신고해야 합니다.")}</p>}
+          {error && <p className="warn warn-error">{error}</p>}
+          <div className="cs-actions">
+            {has && <button type="button" onClick={() => setOpen(false)}>{t("취소")}</button>}
+            <button type="button" className="cs-primary" disabled={busy || codes.length === 0} onClick={save}>
+              {busy ? t("저장 중") : t("최종 진단 저장")}
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -565,6 +660,9 @@ export default function CaseDetail({ c, token, bansuk, onChange }: { c: Necropsy
                 <p className="cs-muted">{t("부검을 마치면 결과를 적어 주세요. 공유하기 전까지 농장에는 보이지 않습니다.")}</p>
               )}
             </section>
+          )}
+          {bansuk && !editing && (c.status === "done" || c.status === "shared") && c.result && (
+            <DiagnosisBox key={`${c.id}-${c.result.diagnosed_at ?? ""}`} c={c} token={token} onChange={onChange} />
           )}
           {!bansuk && c.status === "done" && <p className="cs-box">{t("부검을 마쳤습니다. 반석에서 결과를 정리하고 있습니다.")}</p>}
           {!bansuk && c.status === "shared" && c.result && (

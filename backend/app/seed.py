@@ -369,7 +369,10 @@ def _seed_lab(db, farm, vet, today) -> None:
                                           ("기관, 신장", "negative", False)]):
         db.add(LabSample(submission_id=s_.id, sample=smp, result=res, control=ctl, sort_order=i))
     if c3:
-        c3.final_diagnosis = "지방간 출혈 증후군 (조직 검사 확인). IB 음성."
+        c3.final_diagnosis = "조직 검사 확인. IB 음성."
+        c3.final_diseases = ["fatty_liver"]
+        c3.diagnosed_at = dt.datetime.combine(day + dt.timedelta(days=2), dt.time(5, 0))
+        c3.diagnosed_by = vet.id
 
     day = today - dt.timedelta(days=1)
     s_ = sub(houses["2동"], day, kind="pcr", status="draft", report_no="DEMO-PCR-0002", method="RT-PCR",
@@ -410,6 +413,8 @@ def _seed_region_cases(db, vet, today) -> None:
                              dead_count=rnd.randint(8, 60), onset="yesterday", symptoms=[], proposals=[], scheduled_at=at,
                              vet_id=vet.id, performed_at=at, birds_examined=rnd.randint(3, 8), findings=[], samples=["pcr"],
                              suspected=[disease], shared_at=at + dt.timedelta(hours=4))
+            if rnd.random() < 0.7:  # 대부분은 검사 뒤 최종 진단까지
+                c.final_diseases, c.diagnosed_at, c.diagnosed_by = [disease], at + dt.timedelta(days=3), vet.id
             db.add(c)
             db.flush()
             if disease in lab_target and rnd.random() < 0.8:

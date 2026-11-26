@@ -133,7 +133,8 @@ def _detail(db: Session, user: User, s: LabSubmission) -> dict:
     )
     case = db.get(NecropsyCase, s.case_id) if s.case_id else None
     out["case"] = (
-        {"id": case.id, "status": case.status, "final_diagnosis": case.final_diagnosis, "suspected": case.suspected or []}
+        {"id": case.id, "status": case.status, "final_diagnosis": case.final_diagnosis, "suspected": case.suspected or [],
+         "final_diseases": case.final_diseases or []}
         if case
         else None
     )

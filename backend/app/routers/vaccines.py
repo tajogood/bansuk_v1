@@ -364,3 +364,11 @@ def delete_vaccination(vaccination_id: int, user: User = Depends(_bansuk), db: S
 def due(days: int = 14, user: User = Depends(_bansuk), db: Session = Depends(get_db)):
     """모든 농장의 밀린 접종과 앞으로 N일 안의 접종."""
     return {"items": svc.due_board(db, accessible_farm_ids(db, user), min(max(days, 1), 60)), "today": svc.local_today().isoformat()}
+
+
+@router.get("/farms/{farm_id}/vaccination/upcoming")
+def farm_upcoming(farm_id: int, days: int = 14, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """농장 화면용: 이 농장의 밀린 접종과 앞으로 N일 안의 접종 (농장주도 봄)."""
+    require_farm(db, user, farm_id)
+    items = svc.due_board(db, {farm_id}, min(max(days, 1), 60))
+    return {"items": items, "today": svc.local_today().isoformat()}

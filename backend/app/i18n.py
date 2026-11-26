@@ -56,7 +56,10 @@ EXACT: dict[str, str] = {
     "질병별": "By disease", "지역별": "By region", "항원별": "By antigen", "건": "cases",
     "대조를 뺀 시료 중 하나라도 양성이면 양성 (PCR·배양)": "Positive if any non-control sample is positive (PCR, culture)",
     "혈청 검사의 층·차량별 평균을 시료수로 가중 평균": "Weighted by sample count across groups in serology tests",
-    "의심 질병이 여러 개면 질병마다 한 번씩 셉니다": "A case with several suspected diseases counts once per disease",
+    "최종 진단(없으면 의심 질병) 기준. 질병이 여러 개면 질병마다 한 번씩 셉니다": "Based on final diagnosis (suspected diseases if none yet). A case with several diseases counts once per disease",
+    "부검 결과를 먼저 저장해 주세요": "Save the necropsy result first",
+    "'원인 미확정'은 다른 질병과 함께 고를 수 없습니다": "'Undetermined' cannot be chosen together with other diseases",
+    "원인 미확정": "Undetermined",
     # 검사 결과
     "검사 결과를 찾을 수 없습니다": "Lab result not found",
     "이 농장의 부검 건이 아닙니다": "That necropsy case does not belong to this farm",
