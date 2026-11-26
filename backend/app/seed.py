@@ -165,6 +165,7 @@ def seed(reset: bool = True, days: int = 45) -> None:
     _seed_vaccines(db, farm, vet, today)
     _seed_lab(db, farm, vet, today)
     _seed_region_cases(db, vet, today)
+    _seed_virtual_production(db, today)
     print(f"데모 데이터 생성 완료: {DEMO_FARM}, 계군 {len(houses) + 1}개 (동마다 과거 계군 3개 포함)")
 
 
@@ -380,6 +381,69 @@ def _seed_lab(db, farm, vet, today) -> None:
     for i, (smp, res, ctl) in enumerate([("APV 양성 대조", "positive", True), ("APV 음성 대조", "negative", True),
                                           ("기관, 맹장편도", "positive", False)]):
         db.add(LabSample(submission_id=s_.id, sample=smp, result=res, control=ctl, sort_order=i))
+    db.commit()
+
+
+def _seed_virtual_production(db, today) -> None:
+    """가상농장 7곳에도 계군과 일일 기록을 넣어 전체 현황 화면이 실제처럼 보이게 한다.
+
+    시나리오: 정상 / 최근 산란율 급락(질병 의심) / 육성 끝나고 올라가는 계군 / 노계 하락·오늘 미입력 /
+    상위 성적 / 며칠째 미입력 / 소규모.
+    """
+    rnd = random.Random(7)
+    plans = {
+        # 농장: (오늘 입력 여부, 마지막 입력 며칠 전, [(동 이름, 일령, 수준, 급락 시작 며칠 전 or None)])
+        "가상농장 가": (True, 0, [("1동", 300, 0.97, None), ("2동", 420, 0.96, None), ("3동", 210, 0.98, None)]),
+        "가상농장 나": (True, 0, [("1동", 330, 0.96, None), ("2동", 260, 0.97, 9), ("3동", 480, 0.95, None)]),
+        "가상농장 다": (False, 1, [("1동", 150, 1.0, None), ("2동", 175, 0.99, None)]),
+        "가상농장 라": (False, 1, [("1동", 640, 0.93, None), ("2동", 590, 0.94, None), ("3동", 700, 0.92, None)]),
+        "가상농장 마": (True, 0, [("1동", 280, 1.02, None), ("2동", 350, 1.01, None)]),
+        "가상농장 바": (False, 4, [("1동", 390, 0.95, None), ("2동", 455, 0.95, None)]),
+        "가상농장 사": (True, 0, [("1동", 250, 0.97, None)]),
+    }
+    for farm in db.query(Farm).filter(Farm.name.in_(list(plans))):
+        entered_today, lag, houses = plans[farm.name]
+        if not db.query(FarmInputConfig).filter_by(farm_id=farm.id).first():
+            db.add(FarmInputConfig(farm_id=farm.id))
+        existing = {h.name: h for h in db.query(House).filter_by(farm_id=farm.id)}
+        for i, (hname, age, lvl, drop) in enumerate(houses):
+            h = existing.get(hname)
+            if not h:
+                h = House(farm_id=farm.id, name=hname, kind="laying", sort_order=i)
+                db.add(h)
+                db.flush()
+            placed = today - dt.timedelta(days=age - 1)
+            transfer = placed + dt.timedelta(days=84)
+            fl = Flock(farm_id=farm.id, name=f"{placed:%y%m%d} 입추", placed_on=placed, placed_count=52000,
+                       breed=rnd.choice(["갈색", "Hy-Line Brown", "로만 브라운"]), status="laying")
+            db.add(fl)
+            db.flush()
+            count = 50000 + rnd.randint(-3000, 3000)
+            db.add(FlockLocation(flock_id=fl.id, house_id=h.id, from_date=transfer, start_count=count))
+            d = max(transfer, today - dt.timedelta(days=180))
+            end = today if entered_today else today - dt.timedelta(days=lag)
+            sh = rnd.uniform(-0.3, 0.6)
+            while d <= end:
+                a = (d - placed).days + 1
+                back = (today - d).days
+                factor = 1.0
+                if drop is not None and back <= drop:
+                    factor = 1 - 0.018 * (drop - back + 1)  # 하루 1.8%p씩 떨어짐
+                mort = max(0, int(rnd.gauss(count * (0.00045 if factor < 1 else 0.00012), 2)))
+                count -= mort
+                rate = _lay_rate(a, lvl, sh) * factor * (1 + rnd.gauss(0, 0.01))
+                eggs = int(count * rate)
+                split = _grade_split(a)
+                feed = round(count * rnd.gauss(0.118, 0.003), -1)
+                db.add(DailyRecord(
+                    farm_id=farm.id, house_id=h.id, flock_id=fl.id, date=d, bird_count=count, mortality=mort,
+                    **{f"egg_{g}": round(eggs * v / 30) * 30 for g, v in split.items()},
+                    egg_weight=round(52 + 13 * min(1, max(0, (a / 7 - 20) / 40)) + rnd.gauss(0, 0.3), 2),
+                    feed_kg=feed, water_l=round(feed * rnd.gauss(1.75, 0.05), -1),
+                    temp_min=round(rnd.gauss(18, 1), 1), temp_max=round(rnd.gauss(25, 1.2), 1),
+                    humidity=round(rnd.gauss(60, 6)), source="manual",
+                ))
+                d += dt.timedelta(days=1)
     db.commit()
 
 

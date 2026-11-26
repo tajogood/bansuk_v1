@@ -425,10 +425,11 @@ export const farmVaccinationApi = {
 export type OverviewFarm = {
   id: number; name: string; region: string | null; houses: number; entered_today: number; last_input: string | null;
   lay_rate_7d: number | null; lay_rate_change: number | null; mortality_7d: number; open_cases: number;
-  cases_awaiting_bansuk: number; vacc_overdue: number; vacc_week: number;
+  cases_awaiting_bansuk: number; vacc_overdue: number; vacc_week: number; series: (number | null)[];
 };
 export type Overview = {
   today: string;
+  dates: string[];
   farms: OverviewFarm[];
   todo: {
     cases: { id: number; farm: string; status: string; dead_count: number | null; reported_at: string | null }[];
@@ -436,4 +437,4 @@ export type Overview = {
     missing_input: string[];
   };
 };
-export const overviewApi = { get: (t: string) => request<Overview>("/api/bansuk/overview", {}, t) };
+export const overviewApi = { get: (t: string, days = 90) => request<Overview>(`/api/bansuk/overview?days=${days}`, {}, t) };

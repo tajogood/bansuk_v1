@@ -43,9 +43,10 @@ def _lay(recs: list[DailyRecord]) -> float | None:
 
 
 @router.get("/overview")
-def overview(user: User = Depends(_bansuk), db: Session = Depends(get_db)):
+def overview(days: int = 90, user: User = Depends(_bansuk), db: Session = Depends(get_db)):
     today = local_today()
-    since = today - dt.timedelta(days=14)
+    days = min(max(days, 14), 365)
+    since = today - dt.timedelta(days=days)
     farms = db.query(Farm).filter(Farm.active.is_(True)).order_by(Farm.name).all()
 
     recs: dict[int, list[DailyRecord]] = defaultdict(list)
@@ -59,6 +60,16 @@ def overview(user: User = Depends(_bansuk), db: Session = Depends(get_db)):
     cases = db.query(NecropsyCase).filter(NecropsyCase.status.in_(OPEN_CASE)).all()
     vacc = due_board(db, None, 7)
 
+    # 농장별 하루 산란율 (계사 합산) — 첫 화면 추이 차트용
+    dates = [(since + dt.timedelta(days=i + 1)).isoformat() for i in range(days)]
+    series: dict[int, list[float | None]] = {}
+    for f in farms:
+        by_day: dict[str, list[DailyRecord]] = defaultdict(list)
+        for r in recs.get(f.id, []):
+            by_day[r.date.isoformat()].append(r)
+        vals = [_lay(by_day[d]) if d in by_day else None for d in dates]
+        series[f.id] = [v if v is not None and 0 < v <= 100 else None for v in vals]  # 육성기(0%)는 빼서 눈금이 눌리지 않게
+
     rows = []
     for f in farms:
         houses = [h for h in db.query(House).filter(House.farm_id == f.id, House.active.is_(True))]
@@ -66,7 +77,7 @@ def overview(user: User = Depends(_bansuk), db: Session = Depends(get_db)):
         fr = recs.get(f.id, [])
         today_houses = {r.house_id for r in fr if r.date == today}
         wk = [r for r in fr if r.date > today - dt.timedelta(days=7)]
-        prev = [r for r in fr if r.date <= today - dt.timedelta(days=7)]
+        prev = [r for r in fr if today - dt.timedelta(days=14) < r.date <= today - dt.timedelta(days=7)]
         lay7, lay_prev = _lay(wk), _lay(prev)
         fc = [c for c in cases if c.farm_id == f.id]
         fv = [v for v in vacc if v["farm"]["id"] == f.id]
@@ -85,6 +96,7 @@ def overview(user: User = Depends(_bansuk), db: Session = Depends(get_db)):
                 "cases_awaiting_bansuk": sum(1 for c in fc if c.awaiting == "bansuk" or c.status == "reported"),
                 "vacc_overdue": sum(1 for v in fv if v["status"] == "overdue"),
                 "vacc_week": sum(1 for v in fv if v["status"] != "overdue"),
+                "series": series[f.id],
             }
         )
 
@@ -102,6 +114,7 @@ def overview(user: User = Depends(_bansuk), db: Session = Depends(get_db)):
     ]
     return {
         "today": today.isoformat(),
+        "dates": dates,
         "farms": rows,
         "todo": {
             "cases": todo_cases[:10],
