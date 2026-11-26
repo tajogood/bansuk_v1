@@ -246,6 +246,19 @@ cd bansuk_v1
 - 코드를 받지 않고 재시작만: `NO_PULL=1 ./start.sh`
 - 서버를 옮길 때는 `backend/.env`(키 포함)와 DB를 함께 옮깁니다.
 
+### 데이터베이스 (PostgreSQL)
+
+- `backend/.env`의 `DATABASE_URL`이 PostgreSQL이면 `./start.sh`가 매번 `alembic upgrade head`로 DB 구조를 최신으로 맞춥니다.
+- **맥 개발 서버**: `DATABASE_URL`이 없으면 `./start.sh`가 Homebrew로 PostgreSQL 16을 설치·시작하고 `bansuk` DB를 만든 뒤 `.env`에 주소를 적습니다. 예전 SQLite 파일(`backend/bansuk.db`)이 있으면 내용을 PostgreSQL로 옮기고 `bansuk.db.migrated`로 남겨 둡니다.
+- **AWS 등 운영 서버**: RDS 같은 PostgreSQL 주소를 `.env`에 `DATABASE_URL=postgresql+psycopg://사용자:비밀번호@호스트:5432/bansuk`로 넣고 `./start.sh`.
+- 주소가 없는 리눅스 서버와 테스트는 SQLite로 돕니다.
+- 모델을 바꾸면 마이그레이션 파일을 만듭니다: `cd backend && DATABASE_URL=... .venv/bin/alembic revision --autogenerate -m "설명"`.
+- 기존 DB를 지우지 않고 가상농장 데모 생산 기록만 넣기: `python -m app.seed --virtual-only`
+
+### 맥 개발 서버 (Finder로 실행)
+
+`tools/mac/설치.command`를 저장소 바깥 폴더(예: `데스크탑/devs/bansuk/`)에 복사해 두고 더블클릭하면 Homebrew·Python·Node 확인, `./start.sh`(설치·DB·빌드·재시작)까지 합니다. 터미널을 열 필요가 없습니다.
+
 ## 개발용 실행
 
 ```bash
@@ -318,7 +331,6 @@ docs/      화면 캡처
 - 분석기 데이터원: 백신 접종 이력 추가
 - 실제 성적서 파일(엑셀) 양식별 파서 (샘플 파일을 받으면)
 - 새 농장이 생길 때마다 그 농장 엑셀 파서 개발
-- 기존 개발 DB는 계정 구조가 바뀌어 다시 만들어야 함 (`python -m app.seed`). 운영 전 Alembic으로 전환
 - 첫 장기 인식 모델 학습 (태깅 300장쯤 모이면), 비슷한 과거 사례 사진 찾기, 질병 추정
 - 사진 저장소 S3 연결 (AWS 배포 때)
-- Alembic 마이그레이션, 배포 환경
+- AWS 배포 (RDS PostgreSQL, HTTPS)
