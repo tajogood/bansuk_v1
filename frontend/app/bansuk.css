@@ -150,6 +150,9 @@ kbd {
 .muted-c { color: var(--bs-ink-3); }
 .warn-c { color: var(--bs-warn); font-weight: 600; }
 body.bs-on .btn-primary {
+  width: auto;
+  min-height: 0;
+  box-shadow: none;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -362,9 +365,13 @@ body.bs-on .btn-primary:hover { background: #185a42; }
 
 @media (max-width: 1280px) {
   .bh-top { grid-template-columns: 1fr; }
+  .bh-farms { overflow-x: auto; }
+  .bh-stats strong { font-size: 27px; }
+  .bh-stats > div { padding: 14px 16px; }
+}
+@media (max-width: 1100px) {
   .bh-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .bh-stats > div:nth-child(4) { border-left: 0; }
-  .bh-farms { overflow-x: auto; }
 }
 @media (max-width: 900px) {
   .bs-app { grid-template-columns: 1fr; }
@@ -391,6 +398,7 @@ body.bs-on .rp-back { display: none; }
 .crumbs select { border: 0; background: none; font: inherit; color: var(--bs-ink); font-weight: 600; padding: 2px 4px; border-radius: 6px; cursor: pointer; }
 .crumbs select:hover { background: #fff; }
 body.bs-on .btn-ghost {
+  min-height: 0;
   display: inline-flex;
   align-items: center;
   padding: 8px 14px;
