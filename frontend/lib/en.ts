@@ -1147,4 +1147,9 @@ export const EN: Record<string, string> = {
   "산란율, 폐사, 접종, 부검 결과까지 계군 하나의 이력으로 이어집니다.": "Lay rate, mortality, vaccinations and necropsy results build one history per flock.",
   "이번 계군": "Current flock",
   "같은 일령 과거 계군": "Past flocks at the same age",
+  "이 기간에 예정된 접종이 없습니다": "No vaccinations scheduled in this period",
+  "예정일이 지났습니다": "Past the planned date",
+  "세로 띠: 오늘": "Band: today",
+  "보기": "View",
+  "달력": "Calendar",
 };

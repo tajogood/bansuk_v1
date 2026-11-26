@@ -166,6 +166,7 @@ def seed(reset: bool = True, days: int = 45) -> None:
     _seed_lab(db, farm, vet, today)
     _seed_region_cases(db, vet, today)
     _seed_virtual_production(db, today)
+    _seed_virtual_programs(db, today)
     print(f"데모 데이터 생성 완료: {DEMO_FARM}, 계군 {len(houses) + 1}개 (동마다 과거 계군 3개 포함)")
 
 
@@ -449,6 +450,43 @@ def _seed_virtual_production(db, today) -> None:
     db.commit()
 
 
+def _seed_virtual_programs(db, today) -> None:
+    """가상농장 일부 계군에 반석 프로그램을 적용하고 지난 접종을 기록한다 (접종 달력 데모).
+    가상농장 나 2동은 최근 항목 하나를 비워 밀린 접종으로 남긴다. 이미 적용된 계군은 건너뛴다."""
+    from .models import FlockProgram, ProgramItem, Vaccination, VaccineProgram
+    from .services.vaccines import assign, planned_date
+
+    prog = db.query(VaccineProgram).filter(VaccineProgram.name == "반석 산란계 프로그램").order_by(VaccineProgram.version.desc()).first()
+    vet = db.query(User).filter(User.role == "bansuk_vet").first()
+    if not prog or not vet:
+        return
+    items = db.query(ProgramItem).filter_by(program_id=prog.id).order_by(ProgramItem.age_days).all()
+    targets = {("가상농장 가", "3동"), ("가상농장 나", "2동"), ("가상농장 다", "1동"), ("가상농장 다", "2동"),
+               ("가상농장 마", "1동"), ("가상농장 사", "1동"), ("가상농장 가", "1동")}
+    for farm in db.query(Farm).filter(Farm.name.like("가상농장 %")):
+        for h in db.query(House).filter_by(farm_id=farm.id):
+            if (farm.name, h.name) not in targets:
+                continue
+            loc = db.query(FlockLocation).filter(FlockLocation.house_id == h.id, FlockLocation.to_date.is_(None)).first()
+            if not loc:
+                continue
+            fl = db.get(Flock, loc.flock_id)
+            if db.query(FlockProgram).filter_by(flock_id=fl.id).first():
+                continue
+            assign(db, fl, prog, fl.placed_on, "데모 적용", vet.id)
+            fl.program_name = prog.name
+            skip_recent = farm.name == "가상농장 나"
+            for it in items:
+                day = planned_date(fl, it.age_days)
+                if day > today - dt.timedelta(days=2):
+                    continue
+                if skip_recent and day >= today - dt.timedelta(days=20):
+                    continue
+                db.add(Vaccination(flock_id=fl.id, house_id=h.id, date=day, vaccine_id=it.vaccine_id, program_item_id=it.id,
+                                   birds=fl.placed_count, lot=f"L{day:%y%m}{it.age_days:03d}", performed_by=vet.id, created_by=vet.id))
+    db.commit()
+
+
 def _seed_region_cases(db, vet, today) -> None:
     """최근 유행 질병 화면용: 지역별 가상 농장의 부검 건과 PCR 양성 결과 (일일 기록 없음)."""
     from .models import Farm, House, LabSample, LabSubmission, NecropsyCase
@@ -522,6 +560,7 @@ if __name__ == "__main__":
     if "--virtual-only" in sys.argv:  # 기존 DB를 지우지 않고 가상농장 생산 기록만 추가
         _db = SessionLocal()
         _seed_virtual_production(_db, dt.date.today())
+        _seed_virtual_programs(_db, dt.date.today())
         _db.close()
         print("가상농장 생산 기록을 추가했습니다.")
     else:

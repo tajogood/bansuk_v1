@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import LangToggle from "@/components/LangToggle";
+import VaccineCalendar from "@/components/viz/VaccineCalendar";
 import NotificationBell from "@/components/NotificationBell";
 import { ApiError, loadSession, vaccinesApi } from "@/lib/api";
 import { DISEASES, label } from "@/lib/cases";
@@ -19,11 +20,16 @@ function DueBoard({ token }: { token: string }) {
   const t = useT();
   const lang = useLang();
   const [items, setItems] = useState<DueRow[] | null>(null);
-  const [days, setDays] = useState(14);
+  const [today, setToday] = useState("");
+  const [days, setDays] = useState(30);
+  const [view, setView] = useState<"calendar" | "list">("calendar");
   useEffect(() => {
     vaccinesApi
       .due(token, days)
-      .then((r) => setItems(r.items))
+      .then((r) => {
+        setItems(r.items);
+        setToday(r.today);
+      })
       .catch(() => setItems([]));
   }, [token, days, lang]);
   if (!items) return <p className="cs-muted">{t("불러오는 중")}</p>;
@@ -34,14 +40,29 @@ function DueBoard({ token }: { token: string }) {
   ];
   return (
     <div>
-      <div className="vx-days">
-        {[7, 14, 30].map((n) => (
-          <button key={n} type="button" aria-pressed={days === n} onClick={() => setDays(n)}>
-            {t("앞으로 {n}일", { n })}
+      <div className="vx-viewtoggle">
+        <div className="vx-days">
+          {[7, 14, 30, 60].map((n) => (
+            <button key={n} type="button" aria-pressed={days === n} onClick={() => setDays(n)}>
+              {t("앞으로 {n}일", { n })}
+            </button>
+          ))}
+        </div>
+        <div className="seg" role="group" aria-label={t("보기")}>
+          <button type="button" aria-pressed={view === "calendar"} onClick={() => setView("calendar")}>
+            {t("달력")}
           </button>
-        ))}
+          <button type="button" aria-pressed={view === "list"} onClick={() => setView("list")}>
+            {t("목록")}
+          </button>
+        </div>
       </div>
-      {groups.map(([title, list]) => (
+      {view === "calendar" && today && (
+        <section className="panel">
+          <VaccineCalendar items={items} today={today} days={days} />
+        </section>
+      )}
+      {view === "list" && groups.map(([title, list]) => (
         <section key={title} className="vx-group">
           <h2>
             {title} <span>{list.length}</span>

@@ -559,3 +559,62 @@ body.bs-on .an-pad select {
 /* 계군 관리: 동 카드를 격자로 */
 body.bs-on .fl-houses { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
 body.bs-on .fl-houses li { padding: 18px 20px; }
+.bh-head { flex-wrap: wrap; }
+.bh-head-actions > * { flex: none; }
+
+/* ---------- 접종 달력 ---------- */
+.vcal { position: relative; overflow-x: auto; padding-bottom: 4px; }
+.vcal-grid { display: grid; min-width: 900px; }
+.vcal { overflow-y: visible; }
+.vcal-corner { position: sticky; left: 0; background: #fff; z-index: 2; }
+.vcal-day { position: relative; padding: 18px 0 6px; text-align: center; font-size: 11.5px; color: var(--bs-ink-3); font-variant-numeric: tabular-nums; border-bottom: 1px solid var(--bs-line); }
+.vcal-day.is-sun { color: #b5523b; }
+.vcal-day.is-today { color: var(--bs-barn-deep); font-weight: 800; }
+.vcal-month { position: absolute; top: 0; left: 2px; font-size: 11px; font-weight: 700; color: var(--bs-ink-2); white-space: nowrap; }
+.vcal-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; min-height: 46px; border-bottom: 1px solid var(--bs-line-2); }
+.vcal-row:hover { background: #f6f9f5; }
+.vcal-label { position: sticky; left: 0; z-index: 2; display: flex; flex-direction: column; padding: 6px 12px 6px 4px; background: inherit; color: var(--bs-ink); text-decoration: none; font-size: 14px; }
+.vcal-row:hover .vcal-label { background: #f6f9f5; }
+.vcal-label span { color: var(--bs-ink-3); font-size: 12.5px; }
+.vcal-cell { align-self: stretch; }
+.vcal-cell.is-sun { background: rgba(181, 82, 59, 0.04); }
+.vcal-cell.is-today { background: var(--bs-yolk-soft); }
+.vcal-dot {
+  z-index: 1;
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  text-decoration: none;
+  transition: transform 0.12s;
+}
+.vcal-dot:hover { transform: scale(1.25); }
+.vcal-dot.st-overdue, .vcal-legend .st-overdue { background: var(--bs-bad); }
+.vcal-dot.st-due, .vcal-legend .st-due { background: var(--bs-yolk); }
+.vcal-dot.st-upcoming, .vcal-legend .st-upcoming { background: #fff; border: 2.5px solid var(--bs-barn); }
+.vcal-tip {
+  position: absolute;
+  transform: translate(-50%, 30px);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--bs-barn-deep);
+  color: #dbe8df;
+  font-size: 12.5px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+}
+.vcal-tip strong { color: #fff; font-size: 13.5px; }
+.vcal-tip em { color: #ffb4a8; font-style: normal; }
+.vcal-legend { display: flex; gap: 16px; margin: 12px 0 0; font-size: 12.5px; color: var(--bs-ink-3); }
+.vcal-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; box-sizing: border-box; }
+.vcal-legend-today::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; background: var(--bs-yolk-soft); border: 1px solid #f0d98a; vertical-align: -1px; }
+.vx-viewtoggle { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
