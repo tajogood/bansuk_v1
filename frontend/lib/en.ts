@@ -1152,4 +1152,9 @@ export const EN: Record<string, string> = {
   "세로 띠: 오늘": "Band: today",
   "보기": "View",
   "달력": "Calendar",
+  "{r} {n}건": "{r}: {n}",
+  "발생 {n}건": "{n} events",
+  "{r}만 보는 중입니다. 다시 누르면 전체로 돌아갑니다.": "Showing {r} only. Click again for all regions.",
+  "지역을 누르면 그 지역만 봅니다.": "Click a region to filter.",
+  "지역 지도": "Region map",
 };

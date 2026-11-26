@@ -618,3 +618,25 @@ body.bs-on .fl-houses li { padding: 18px 20px; }
 .vcal-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; box-sizing: border-box; }
 .vcal-legend-today::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; background: var(--bs-yolk-soft); border: 1px solid #f0d98a; vertical-align: -1px; }
 .vx-viewtoggle { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+
+/* ---------- 지역 타일 지도 ---------- */
+.rmap-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 64px; gap: 6px; }
+.rmap-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  text-align: left;
+  font-size: 13px;
+  transition: transform 0.12s, opacity 0.15s, box-shadow 0.12s;
+}
+.rmap-tile strong { font-size: 20px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.rmap-tile:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(17, 54, 42, 0.18); }
+.rmap-tile.is-sel { box-shadow: 0 0 0 3px var(--bs-yolk); }
+.rmap-tile.is-dim { opacity: 0.4; }
+.rmap-info { display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 10px 14px; border-radius: 10px; background: var(--bs-line-2); font-size: 13px; color: var(--bs-ink-2); }
+.rmap-info strong { font-size: 15px; color: var(--bs-ink); }
+.rmap-dz b { color: var(--bs-ink); }
+.rmap-hint { color: var(--bs-ink-3); line-height: 1.5; }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import RegionMap from "@/components/viz/RegionMap";
 import LangToggle from "@/components/LangToggle";
 import NotificationBell from "@/components/NotificationBell";
 import { epidemicApi, loadSession } from "@/lib/api";
@@ -53,6 +54,7 @@ export default function EpidemicPage() {
   const [data, setData] = useState<Epidemic | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [allRecent, setAllRecent] = useState(false);
+  const [allRegions, setAllRegions] = useState<Epidemic["regions"]>([]);
 
   useEffect(() => {
     setSession(loadSession());
@@ -61,7 +63,13 @@ export default function EpidemicPage() {
   useEffect(() => {
     if (!session) return;
     setError(null);
-    epidemicApi.get(session.token, days, region || null).then(setData).catch((e) => setError(e.message));
+    epidemicApi
+      .get(session.token, days, region || null)
+      .then((r) => {
+        setData(r);
+        if (!region) setAllRegions(r.regions); // 지도는 지역을 골라도 전체 분포를 계속 보여 준다
+      })
+      .catch((e) => setError(e.message));
   }, [session, days, region, lang]);
 
   if (!ready) return null;
@@ -145,6 +153,12 @@ export default function EpidemicPage() {
                 )}
               </section>
               <div className="cs-col-side">
+                {allRegions.length > 0 && (
+                  <section className="cs-sec">
+                    <h2>{t("지역 지도")}</h2>
+                    <RegionMap rows={allRegions} selected={region} onSelect={setRegion} diseaseLabel={(c) => label(DISEASES, c)} />
+                  </section>
+                )}
                 {d.regions.length > 0 && (
                   <section className="cs-sec">
                     <h2>{t("지역별")}</h2>
