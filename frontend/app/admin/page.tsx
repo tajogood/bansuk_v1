@@ -1,5 +1,6 @@
 "use client";
 
+import LocationPicker from "@/components/viz/LocationPicker";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPhone } from "@/components/Login";
 import { adminApi, loadSession } from "@/lib/api";
@@ -155,6 +156,8 @@ export default function AdminPage() {
         contract_type: farmDraft.contract_type,
         active: farmDraft.active,
         importer: farmDraft.importer || null,
+        lat: farmDraft.lat ?? null,
+        lng: farmDraft.lng ?? null,
         houses: farmDraft.houses.filter((h) => h.name.trim()),
         config: farmDraft.config,
       };
@@ -338,7 +341,7 @@ export default function AdminPage() {
                 className="ad-btn an-primary"
                 onClick={() => {
                   setFormError(null);
-                  setFarmDraft({ name: "", region: "", contract_type: "program", active: true, importer: null, houses: [{ name: t("{n}동", { n: 1 }), kind: "laying", active: true }], config: DEFAULT_CONFIG });
+                  setFarmDraft({ name: "", region: "", contract_type: "program", active: true, importer: null, lat: null, lng: null, houses: [{ name: t("{n}동", { n: 1 }), kind: "laying", active: true }], config: DEFAULT_CONFIG });
                 }}
               >
                 {t("농장 만들기")}
@@ -391,7 +394,7 @@ export default function AdminPage() {
                         className="an-mini"
                         onClick={() => {
                           setFormError(null);
-                          setFarmDraft({ id: f.id, name: f.name, region: f.region ?? "", contract_type: f.contract_type, active: f.active, importer: f.importer, houses: f.houses, config: f.config ?? DEFAULT_CONFIG });
+                          setFarmDraft({ id: f.id, name: f.name, region: f.region ?? "", contract_type: f.contract_type, active: f.active, importer: f.importer, lat: f.lat, lng: f.lng, houses: f.houses, config: f.config ?? DEFAULT_CONFIG });
                         }}
                       >
                         {t("고치기")}
@@ -515,6 +518,15 @@ export default function AdminPage() {
                 {t("지역")}
                 <input value={farmDraft.region ?? ""} onChange={(e) => setFarmDraft({ ...farmDraft, region: e.target.value })} placeholder={t("충북 음성")} />
               </label>
+            </div>
+            <div className="an-field-block">
+              <span className="an-field-label">{t("농장 위치 (지도 표시용)")}</span>
+              <LocationPicker
+                lat={farmDraft.lat ?? null}
+                lng={farmDraft.lng ?? null}
+                hint={farmDraft.region ?? ""}
+                onChange={(la, ln) => setFarmDraft((d) => (d ? { ...d, lat: la, lng: ln } : d))}
+              />
             </div>
             <div className="an-row">
               <label>

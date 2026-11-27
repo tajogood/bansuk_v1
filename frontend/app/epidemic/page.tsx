@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import RegionMap from "@/components/viz/RegionMap";
+import OsmMap, { esc } from "@/components/viz/OsmMap";
 import LangToggle from "@/components/LangToggle";
 import NotificationBell from "@/components/NotificationBell";
 import { epidemicApi, loadSession } from "@/lib/api";
@@ -54,7 +54,8 @@ export default function EpidemicPage() {
   const [data, setData] = useState<Epidemic | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [allRecent, setAllRecent] = useState(false);
-  const [allRegions, setAllRegions] = useState<Epidemic["regions"]>([]);
+  const [allMap, setAllMap] = useState<Epidemic["map"]>([]);
+  const [hoverPt, setHoverPt] = useState<string | number | null>(null);
 
   useEffect(() => {
     setSession(loadSession());
@@ -67,7 +68,7 @@ export default function EpidemicPage() {
       .get(session.token, days, region || null)
       .then((r) => {
         setData(r);
-        if (!region) setAllRegions(r.regions); // 지도는 지역을 골라도 전체 분포를 계속 보여 준다
+        if (!region) setAllMap(r.map); // 지도는 지역을 골라도 전체 분포를 계속 보여 준다
       })
       .catch((e) => setError(e.message));
   }, [session, days, region, lang]);
@@ -120,6 +121,74 @@ export default function EpidemicPage() {
               <div><dt>{t("농장")}</dt><dd>{d.farms}</dd></div>
               <div><dt>{t("확진 (최종 진단·검사)")}</dt><dd>{d.confirmed}</dd></div>
             </dl>
+            {allMap.length > 0 && (() => {
+              const max = Math.max(1, ...allMap.map((p) => p.count));
+              const pid = (p: Epidemic["map"][number]) => p.farm_id ?? p.region;
+              const color = (n: number) => (!n ? "#9aa8a0" : n / max > 0.66 ? "#9f1f14" : n / max > 0.33 ? "#d0492f" : "#ee8a63");
+              const pts = allMap.map((p) => ({
+                id: pid(p),
+                lat: p.lat,
+                lng: p.lng,
+                approx: p.approx,
+                radius: p.count ? 7 + Math.sqrt(p.count / max) * 16 : 5,
+                color: color(p.count),
+                tooltip:
+                  `<strong>${esc(p.farm ?? p.region)}</strong>` +
+                  (p.farm ? `<span>${esc(p.region)}${p.approx ? " " + esc(t("(대략 위치)")) : ""}</span>` : "") +
+                  `<span>${esc(t("발생 {n}건", { n: p.count }))}</span>` +
+                  p.top.map((x) => `<span>${esc(label(DISEASES, x.disease))} ${x.count}</span>`).join("") +
+                  (p.last ? `<span class="osm-tip-muted">${esc(t("마지막 {d}", { d: p.last }))}</span>` : ""),
+              }));
+              const ranked = [...allMap].filter((p) => p.count).sort((a, b) => b.count - a.count);
+              return (
+                <section className="cs-sec ep-map">
+                  <div className="ep-map-main">
+                    <OsmMap
+                      points={pts}
+                      highlight={hoverPt}
+                      onHover={setHoverPt}
+                      onSelect={(id) => {
+                        const p = allMap.find((x) => pid(x) === id);
+                        if (p) setRegion(region === p.region ? "" : p.region);
+                      }}
+                      height={440}
+                      label={t("발생 지도")}
+                    />
+                    <p className="ep-map-legend">
+                      <span><i style={{ background: "#ee8a63" }} />{t("적음")}</span>
+                      <span><i style={{ background: "#d0492f" }} />{t("보통")}</span>
+                      <span><i style={{ background: "#9f1f14" }} />{t("많음")}</span>
+                      <span><i style={{ background: "#9aa8a0" }} />{t("발생 없음")}</span>
+                      <span className="ep-map-hint">{t("원을 누르면 그 지역만 봅니다. 지도를 한 번 누르면 휠로 확대됩니다.")}</span>
+                    </p>
+                  </div>
+                  <div className="ep-map-side">
+                    <h2>{d.show_farms ? t("발생 많은 농장") : t("발생 많은 지역")}</h2>
+                    <ol>
+                      {ranked.slice(0, 10).map((p) => (
+                        <li
+                          key={pid(p)}
+                          className={`${hoverPt === pid(p) ? "is-hi" : ""}${region && region !== p.region ? " is-dim" : ""}`}
+                          onMouseEnter={() => setHoverPt(pid(p))}
+                          onMouseLeave={() => setHoverPt(null)}
+                        >
+                          <button type="button" onClick={() => setRegion(region === p.region ? "" : p.region)}>
+                            <strong>{p.farm ?? p.region}</strong>
+                            <span>{p.farm ? p.region : ""}</span>
+                            <b>{p.count}</b>
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                    {region && (
+                      <button type="button" className="link-btn ep-map-clear" onClick={() => setRegion("")}>
+                        {t("{r} 필터 해제", { r: region })}
+                      </button>
+                    )}
+                  </div>
+                </section>
+              );
+            })()}
             <div className="ep-cols">
               <section className="cs-sec">
                 <div className="cs-sec-head">
@@ -153,12 +222,6 @@ export default function EpidemicPage() {
                 )}
               </section>
               <div className="cs-col-side">
-                {allRegions.length > 0 && (
-                  <section className="cs-sec">
-                    <h2>{t("지역 지도")}</h2>
-                    <RegionMap rows={allRegions} selected={region} onSelect={setRegion} diseaseLabel={(c) => label(DISEASES, c)} />
-                  </section>
-                )}
                 {d.regions.length > 0 && (
                   <section className="cs-sec">
                     <h2>{t("지역별")}</h2>

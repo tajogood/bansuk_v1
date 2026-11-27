@@ -429,6 +429,7 @@ export type OverviewFarm = {
   id: number; name: string; region: string | null; houses: number; entered_today: number; last_input: string | null;
   lay_rate_7d: number | null; lay_rate_change: number | null; mortality_7d: number; open_cases: number;
   cases_awaiting_bansuk: number; vacc_overdue: number; vacc_week: number; series: (number | null)[];
+  lat: number | null; lng: number | null; approx: boolean;
 };
 export type Overview = {
   today: string;

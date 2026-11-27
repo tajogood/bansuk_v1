@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..db import get_db
+from ..geo import farm_point
 from ..models import DailyRecord, Farm, House, NecropsyCase, User
 from ..security import BANSUK_ROLES, current_user
 from ..services.flocks import flock_location_at
@@ -97,6 +98,7 @@ def overview(days: int = 90, user: User = Depends(_bansuk), db: Session = Depend
                 "vacc_overdue": sum(1 for v in fv if v["status"] == "overdue"),
                 "vacc_week": sum(1 for v in fv if v["status"] != "overdue"),
                 "series": series[f.id],
+                **(lambda pt: {"lat": pt[0], "lng": pt[1], "approx": pt[2]} if pt else {"lat": None, "lng": None, "approx": True})(farm_point(f)),
             }
         )
 

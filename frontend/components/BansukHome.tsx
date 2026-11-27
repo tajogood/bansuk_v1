@@ -6,6 +6,7 @@
    아래: 농장 표 (필터, 정렬, 미니 추이). 표에 마우스를 올리면 차트에서 그 농장이 강조된다. */
 import { useEffect, useMemo, useState } from "react";
 import LineChart, { Sparkline } from "./viz/LineChart";
+import OsmMap, { esc } from "./viz/OsmMap";
 import { overviewApi, type Overview, type OverviewFarm } from "@/lib/api";
 import { useLang, useT } from "@/lib/i18n";
 
@@ -184,6 +185,38 @@ export default function BansukHome({ token }: { token: string }) {
           </div>
         </section>
 
+        <div className="bh-right">
+        <section className="panel bh-map">
+          <div className="panel-head">
+            <h2>{t("농장 위치")}</h2>
+            <span className="muted-s">{t("빨강 주의, 노랑 오늘 미입력")}</span>
+          </div>
+          <OsmMap
+            height={250}
+            label={t("농장 위치")}
+            highlight={focus}
+            onHover={(id) => pinned === null && setHi(id)}
+            onSelect={(id) => (window.location.href = `/?farm=${id}`)}
+            points={d.farms
+              .filter((f) => f.lat !== null && f.lng !== null)
+              .map((f) => {
+                const att = needsAttention(f);
+                const miss = f.houses > 0 && f.entered_today < f.houses;
+                return {
+                  id: f.id,
+                  lat: f.lat as number,
+                  lng: f.lng as number,
+                  approx: f.approx,
+                  radius: f.houses ? 6 + Math.min(6, f.houses * 1.5) : 5,
+                  color: !f.houses ? "#9aa8a0" : att ? "#b42318" : miss ? "#e8a900" : "#1f6b4f",
+                  tooltip:
+                    `<strong>${esc(f.name)}</strong><span>${esc(f.region ?? "")}</span>` +
+                    (f.lay_rate_7d !== null ? `<span>${esc(t("산란율 7일"))} ${f.lay_rate_7d.toFixed(1)}%</span>` : "") +
+                    (f.houses ? `<span>${esc(t("오늘 입력"))} ${f.entered_today}/${f.houses}</span>` : `<span>${esc(t("계군 없음"))}</span>`),
+                };
+              })}
+          />
+        </section>
         <section className="panel bh-alerts">
           <div className="panel-head">
             <h2>{t("지금 볼 것")}</h2>
@@ -204,6 +237,7 @@ export default function BansukHome({ token }: { token: string }) {
             </ul>
           )}
         </section>
+        </div>
       </div>
 
       <section className="panel bh-farms">

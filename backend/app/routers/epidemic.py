@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from ..db import get_db
+from ..geo import REGION_CENTER, farm_point, region_key
 from ..models import Farm, LabSample, LabSubmission, NecropsyCase, User
 from ..security import BANSUK_ROLES, current_user
 
@@ -151,6 +152,33 @@ def epidemic(
             row.update(farm=e["farm"], farm_id=e["farm_id"], case_id=e["case_id"], lab_id=e["lab_id"])
         recent.append(row)
 
+    # 지도: 반석은 농장 단위, 농장주는 지역 단위(다른 농장 위치를 보이지 않음)
+    map_points = []
+    if bansuk:
+        per: dict[int, dict] = {}
+        for e in events:
+            p = per.setdefault(e["farm_id"], {"count": 0, "diseases": defaultdict(int), "last": e["date"], "confirmed": 0})
+            p["count"] += 1
+            p["diseases"][e["disease"]] += 1
+            p["last"] = max(p["last"], e["date"])
+            p["confirmed"] += 1 if e["confirmed"] else 0
+        for f in db.query(Farm).filter(Farm.active.is_(True)):
+            pt = farm_point(f)
+            if not pt:
+                continue
+            p = per.get(f.id)
+            map_points.append({
+                "farm_id": f.id, "farm": f.name, "region": region_key(f.region), "lat": pt[0], "lng": pt[1], "approx": pt[2],
+                "count": p["count"] if p else 0, "confirmed": p["confirmed"] if p else 0,
+                "last": p["last"].isoformat() if p else None,
+                "top": [{"disease": k, "count": n} for k, n in sorted(p["diseases"].items(), key=lambda x: -x[1])[:4]] if p else [],
+            })
+    else:
+        for r in region_rows:
+            c = REGION_CENTER.get(r["region"])
+            if c:
+                map_points.append({"region": r["region"], "lat": c[0], "lng": c[1], "approx": True, "count": r["count"], "top": r["top"]})
+
     all_regions = sorted({(f.region or "").split()[0] for f in db.query(Farm) if f.region})
     return {
         "from": start.isoformat(), "to": today.isoformat(), "days": days, "region": region or None,
@@ -158,5 +186,5 @@ def epidemic(
         "total": len(events), "farms": len({e["farm_id"] for e in events}),
         "confirmed": sum(1 for e in events if e["confirmed"]),
         "diseases": diseases, "regions": region_rows, "recent": recent, "all_regions": all_regions,
-        "show_farms": bansuk,
+        "show_farms": bansuk, "map": map_points,
     }

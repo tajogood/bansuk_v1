@@ -215,6 +215,8 @@ class FarmIn(BaseModel):
     contract_type: Literal["program", "test_only"] = "program"
     active: bool = True
     importer: str | None = None
+    lat: float | None = Field(default=None, ge=33, le=39)
+    lng: float | None = Field(default=None, ge=124, le=132)
     houses: list[HouseIn] = []
     config: ConfigIn | None = None
 
@@ -234,6 +236,8 @@ def _farm_dict(db: Session, f: Farm) -> dict:
         "contract_type": f.contract_type,
         "active": f.active,
         "importer": f.importer,
+        "lat": f.lat,
+        "lng": f.lng,
         "houses": [{"id": h.id, "name": h.name, "kind": h.kind, "active": h.active} for h in f.houses],
         "accounts": [{"id": i, "name": n} for i, n in owners],
         "config": {
@@ -302,7 +306,8 @@ def create_farm(body: FarmIn, admin: User = Depends(admin_user), db: Session = D
     if db.query(Farm).filter(func.lower(Farm.name) == body.name.strip().lower()).first():
         raise HTTPException(409, "같은 이름의 농장이 있습니다")
     _check_importer(body.importer)
-    f = Farm(name=body.name.strip(), region=body.region, contract_type=body.contract_type, active=body.active, importer=body.importer or None)
+    f = Farm(name=body.name.strip(), region=body.region, contract_type=body.contract_type, active=body.active, importer=body.importer or None,
+             lat=body.lat, lng=body.lng)
     db.add(f)
     db.flush()
     _apply_houses(db, f, body.houses)
@@ -324,6 +329,7 @@ def update_farm(farm_id: int, body: FarmIn, admin: User = Depends(admin_user), d
     _check_importer(body.importer)
     f.name, f.region, f.contract_type, f.active = body.name.strip(), body.region, body.contract_type, body.active
     f.importer = body.importer or None
+    f.lat, f.lng = body.lat, body.lng
     _apply_houses(db, f, body.houses)
     _apply_config(db, f, body.config)
     audit(db, admin.id, "farm_updated", target_farm_id=f.id)

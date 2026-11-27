@@ -183,6 +183,8 @@ export type AdminFarm = {
   contract_type: "program" | "test_only";
   active: boolean;
   importer: string | null;
+  lat: number | null;
+  lng: number | null;
   houses: AdminHouse[];
   accounts: { id: number; name: string }[];
   config: FarmConfigIn | null;
@@ -484,6 +486,18 @@ export type Epidemic = {
   regions: { region: string; count: number; top: { disease: string; count: number }[] }[];
   recent: { date: string; disease: string; region: string; source: "necropsy" | "lab" | "both"; confirmed: boolean; farm?: string; farm_id?: number; case_id?: number | null; lab_id?: number | null }[];
   all_regions: string[];
+  map: {
+    farm_id?: number;
+    farm?: string;
+    region: string;
+    lat: number;
+    lng: number;
+    approx: boolean;
+    count: number;
+    confirmed?: number;
+    last?: string | null;
+    top: { disease: string; count: number }[];
+  }[];
   show_farms: boolean;
 };
 

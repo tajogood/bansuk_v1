@@ -167,6 +167,7 @@ def seed(reset: bool = True, days: int = 45) -> None:
     _seed_region_cases(db, vet, today)
     _seed_virtual_production(db, today)
     _seed_virtual_programs(db, today)
+    _seed_coords(db)
     print(f"데모 데이터 생성 완료: {DEMO_FARM}, 계군 {len(houses) + 1}개 (동마다 과거 계군 3개 포함)")
 
 
@@ -450,6 +451,19 @@ def _seed_virtual_production(db, today) -> None:
     db.commit()
 
 
+DEMO_COORDS = {  # 산란계 농장이 많은 지역 근처의 그럴듯한 위치 (가상)
+    "데모농장": (36.94, 127.69), "가상농장 가": (37.01, 127.28), "가상농장 나": (37.89, 127.20), "가상농장 다": (36.19, 127.10),
+    "가상농장 라": (36.86, 127.44), "가상농장 마": (35.80, 126.88), "가상농장 바": (36.41, 128.16), "가상농장 사": (35.54, 128.49),
+}
+
+
+def _seed_coords(db) -> None:
+    """데모 농장 위치를 채운다 (비어 있을 때만)."""
+    for f in db.query(Farm).filter(Farm.name.in_(list(DEMO_COORDS)), Farm.lat.is_(None)):
+        f.lat, f.lng = DEMO_COORDS[f.name]
+    db.commit()
+
+
 def _seed_virtual_programs(db, today) -> None:
     """가상농장 일부 계군에 반석 프로그램을 적용하고 지난 접종을 기록한다 (접종 달력 데모).
     가상농장 나 2동은 최근 항목 하나를 비워 밀린 접종으로 남긴다. 이미 적용된 계군은 건너뛴다."""
@@ -561,6 +575,7 @@ if __name__ == "__main__":
         _db = SessionLocal()
         _seed_virtual_production(_db, dt.date.today())
         _seed_virtual_programs(_db, dt.date.today())
+        _seed_coords(_db)
         _db.close()
         print("가상농장 생산 기록을 추가했습니다.")
     else:

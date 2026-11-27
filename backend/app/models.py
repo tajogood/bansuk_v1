@@ -39,6 +39,9 @@ class Farm(Base):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     # 이 농장 엑셀을 읽는 파서 (app/importers의 FORMATS 키). 새 농장 양식은 개발해서 등록한다.
     importer: Mapped[str | None] = mapped_column(String(40))
+    # 지도 표시용 위치 (관리 화면에서 지도를 눌러 정한다). 없으면 도 중심 근처에 대략 표시한다.
+    lat: Mapped[float | None] = mapped_column(Float)
+    lng: Mapped[float | None] = mapped_column(Float)
 
     houses: Mapped[list[House]] = relationship(back_populates="farm", order_by="House.sort_order")
     config: Mapped[FarmInputConfig | None] = relationship(back_populates="farm", uselist=False)
