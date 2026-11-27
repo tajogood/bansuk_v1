@@ -652,3 +652,6 @@ body.bs-on .fl-houses li { padding: 18px 20px; }
 .bs-user .bell-panel { top: auto; bottom: 0; right: auto; left: 52px; max-height: min(70vh, 560px); color: var(--bs-ink); box-shadow: 0 16px 48px rgba(12, 32, 24, 0.3); }
 .bs-user .bell-btn { color: #d8e6dd; background: transparent; }
 .bs-user .bell-btn:hover { background: #1a4636; }
+/* 내용 없는 상자는 숨김 (접종 예정 없음 등) */
+.bf-side .panel:empty { display: none; }
+body.bs-on .cs-proxy { align-self: flex-end; margin-left: auto; display: flex; width: fit-content; font-size: 13.5px; padding: 7px 12px; color: var(--bs-ink-2); }

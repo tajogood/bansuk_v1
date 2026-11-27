@@ -89,9 +89,16 @@ function CaseList({ session, bansuk }: { session: Session; bansuk: boolean }) {
 
   return (
     <div className="cs-list">
-      <button type="button" className="btn-primary cs-new" onClick={() => go({ kind: "new" })}>
-        {bansuk ? t("폐사 신고 대신 등록") : t("폐사 신고하기")}
-      </button>
+      {bansuk ? (
+        /* 반석은 농장이 전화로 알려 온 경우에만 대신 등록한다 (작게) */
+        <button type="button" className="btn-ghost cs-proxy" onClick={() => go({ kind: "new" })}>
+          {t("전화로 받은 신고 대신 등록")}
+        </button>
+      ) : (
+        <button type="button" className="btn-primary cs-new" onClick={() => go({ kind: "new" })}>
+          {t("폐사 신고하기")}
+        </button>
+      )}
       {!bansuk && <p className="cs-muted cs-help">{t("죽은 닭이 평소보다 많으면 신고해 주세요. 반석이 확인하고 부검 일정을 잡아 드립니다.")}</p>}
       <div className="cs-groups">
         {groups.map(([title, list, hint]) => (

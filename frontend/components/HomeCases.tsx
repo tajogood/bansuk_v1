@@ -36,10 +36,15 @@ export default function HomeCases({ token, farmId, isBansuk }: { token: string; 
   );
   return (
     <div className="hc">
-      <a className="btn-primary hc-new" href={`/cases/?new=1&farm=${farmId}`}>
-        {t("폐사 신고하기")}
-      </a>
-      <p className="muted hc-help">{t("죽은 닭이 평소보다 많으면 신고해 주세요. 반석이 확인하고 부검 일정을 잡아 드립니다.")}</p>
+      {/* 폐사 신고는 농장이 한다. 반석 화면에서는 진행 상황만 본다. */}
+      {!isBansuk && (
+        <>
+          <a className="btn-primary hc-new" href={`/cases/?new=1&farm=${farmId}`}>
+            {t("폐사 신고하기")}
+          </a>
+          <p className="muted hc-help">{t("죽은 닭이 평소보다 많으면 신고해 주세요. 반석이 확인하고 부검 일정을 잡아 드립니다.")}</p>
+        </>
+      )}
       {cases === null ? (
         <p className="muted center">{t("불러오는 중")}</p>
       ) : (

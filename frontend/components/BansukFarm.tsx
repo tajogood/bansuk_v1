@@ -115,10 +115,9 @@ export default function BansukFarm({ token, farmId, farms }: { token: string; fa
           </p>
         </div>
         <div className="bh-head-actions">
+          {/* 일일 기록·엑셀 업로드·폐사 신고는 농장이 한다. 반석은 보고 관리한다. */}
           <a className="btn-ghost" href={`/flocks/?farm=${farmId}`}>{t("계군 관리")}</a>
-          <a className="btn-ghost" href={`/upload/?farm=${farmId}`}>{t("엑셀 올리기")}</a>
-          <a className="btn-ghost" href={`/report/?farm=${farmId}`}>{t("성적 보고서")}</a>
-          <a className="btn-primary" href={`/?farm=${farmId}&mode=input`}>{t("오늘 기록 입력")}</a>
+          <a className="btn-primary" href={`/report/?farm=${farmId}`}>{t("성적 보고서")}</a>
         </div>
       </header>
 

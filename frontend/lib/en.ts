@@ -1157,4 +1157,5 @@ export const EN: Record<string, string> = {
   "{r}만 보는 중입니다. 다시 누르면 전체로 돌아갑니다.": "Showing {r} only. Click again for all regions.",
   "지역을 누르면 그 지역만 봅니다.": "Click a region to filter.",
   "지역 지도": "Region map",
+  "전화로 받은 신고 대신 등록": "Register a report received by phone",
 };
