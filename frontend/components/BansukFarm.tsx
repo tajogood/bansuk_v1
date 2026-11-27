@@ -12,6 +12,7 @@ import UpcomingVaccinations from "./UpcomingVaccinations";
 import LineChart from "./viz/LineChart";
 import { api } from "@/lib/api";
 import { useLang, useT } from "@/lib/i18n";
+import { usePref } from "@/lib/usePref";
 import { shiftISO, todayISO } from "@/lib/format";
 import type { DayView } from "@/lib/types";
 
@@ -21,8 +22,8 @@ export default function BansukFarm({ token, farmId, farms }: { token: string; fa
   const t = useT();
   const lang = useLang();
   const today = todayISO();
-  const [range, setRange] = useState(90);
-  const [metric, setMetric] = useState<Metric>("lay");
+  const [range, setRange] = usePref("farm_range", 90);
+  const [metric, setMetric] = usePref<Metric>("farm_metric", "lay");
   const [day, setDay] = useState<DayView | null>(null);
   const [recs, setRecs] = useState<{ date: string; house_id: number; [k: string]: unknown }[] | null>(null);
   const [hi, setHi] = useState<string | number | null>(null);

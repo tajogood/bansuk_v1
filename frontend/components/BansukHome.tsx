@@ -9,6 +9,7 @@ import LineChart, { Sparkline } from "./viz/LineChart";
 import OsmMap, { esc } from "./viz/OsmMap";
 import { overviewApi, type Overview, type OverviewFarm } from "@/lib/api";
 import { useLang, useT } from "@/lib/i18n";
+import { useCountUp, usePref } from "@/lib/usePref";
 
 type SortKey = "name" | "lay_rate_7d" | "lay_rate_change" | "mortality_7d" | "open_cases";
 type Filter = "all" | "attention" | "missing" | "cases";
@@ -22,17 +23,39 @@ type Alert = { farm: OverviewFarm | null; level: "high" | "mid"; title: string; 
 export default function BansukHome({ token }: { token: string }) {
   const t = useT();
   const lang = useLang();
-  const [range, setRange] = useState(90);
+  const [range, setRange] = usePref("home_range", 90);
   const [d, setD] = useState<Overview | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [sort, setSort] = useState<{ k: SortKey; desc: boolean }>({ k: "lay_rate_change", desc: false });
+  const [sort, setSort] = usePref<{ k: SortKey; desc: boolean }>("home_sort", { k: "lay_rate_change", desc: false });
   const [q, setQ] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter, setFilter] = usePref<Filter>("home_filter", "all");
+  const [loadedAt, setLoadedAt] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [hi, setHi] = useState<string | number | null>(null);
   const [pinned, setPinned] = useState<number | null>(null);
 
+  const load = (quiet = false) => {
+    if (quiet) setRefreshing(true);
+    return overviewApi
+      .get(token, range)
+      .then((r) => {
+        setD(r);
+        setErr(null);
+        setLoadedAt(new Date());
+      }, (e) => setErr((e as Error).message))
+      .finally(() => setRefreshing(false));
+  };
   useEffect(() => {
-    overviewApi.get(token, range).then(setD, (e) => setErr((e as Error).message));
+    load();
+    // 탭으로 돌아오면, 그리고 5분마다 새로 불러온다 (농장 입력이 들어오는 중이므로)
+    const onVis = () => document.visibilityState === "visible" && load(true);
+    document.addEventListener("visibilitychange", onVis);
+    const iv = setInterval(() => document.visibilityState === "visible" && load(true), 5 * 60 * 1000);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      clearInterval(iv);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, lang, range]);
 
   const missingDays = (f: OverviewFarm) => (d && f.houses ? (f.last_input ? daysBetween(f.last_input, d.today) : 99) : 0);
@@ -74,8 +97,24 @@ export default function BansukHome({ token }: { token: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d, q, sort, filter]);
 
-  if (err) return <div className="bh"><p className="bh-err">{err}</p></div>;
-  if (!d) return <div className="bh"><div className="bh-skeleton" /></div>;
+  // 요약 숫자 (처음 나타날 때 한 번 올라가는 효과)
+  const activeFarms = d ? d.farms.filter((f) => f.houses > 0) : [];
+  const lay7 = activeFarms.map((f) => f.lay_rate_7d).filter((x): x is number => x !== null);
+  const cuLay = useCountUp(d ? (lay7.length ? lay7.reduce((a, b) => a + b, 0) / lay7.length : null) : null);
+  const cuDeaths = useCountUp(d ? activeFarms.reduce((a, f) => a + f.mortality_7d, 0) : null);
+
+  if (err && !d) return <div className="bh"><p className="bh-err">{err}</p></div>;
+  if (!d)
+    return (
+      <div className="bh">
+        <div className="sk sk-title" />
+        <div className="sk sk-strip" />
+        <div className="bh-top">
+          <div className="sk sk-panel" />
+          <div className="sk sk-panel" />
+        </div>
+      </div>
+    );
 
   const active = d.farms.filter((f) => f.houses > 0);
   const lays = active.map((f) => f.lay_rate_7d).filter((x): x is number => x !== null);
@@ -109,7 +148,17 @@ export default function BansukHome({ token }: { token: string }) {
     <div className="bh">
       <header className="bh-head">
         <div>
-          <p className="bh-date">{dateLabel}</p>
+          <p className="bh-date">
+            {dateLabel}
+            {loadedAt && (
+              <button type="button" className={`bh-refresh${refreshing ? " is-spin" : ""}`} onClick={() => load(true)} title={t("새로 불러오기")}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+                  <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />
+                </svg>
+                {t("{t} 기준", { t: loadedAt.toLocaleTimeString(lang === "en" ? "en-US" : "ko-KR", { hour: "2-digit", minute: "2-digit" }) })}
+              </button>
+            )}
+          </p>
           <h1>{t("전체 농장 현황")}</h1>
         </div>
         <div className="bh-head-actions">
@@ -126,7 +175,7 @@ export default function BansukHome({ token }: { token: string }) {
       <section className="bh-stats" aria-label={t("요약")}>
         <div>
           <span>{t("평균 산란율 7일")}</span>
-          <strong>{avgLay !== null ? avgLay.toFixed(1) : "–"}<small>%</small></strong>
+          <strong>{avgLay !== null && cuLay !== null ? cuLay.toFixed(1) : "–"}<small>%</small></strong>
           {avgChg !== null && <em className={avgChg < 0 ? "down" : "up"}>{avgChg > 0 ? "+" : ""}{avgChg.toFixed(1)}%p {t("지난주 대비")}</em>}
         </div>
         <div>
@@ -136,7 +185,7 @@ export default function BansukHome({ token }: { token: string }) {
         </div>
         <div>
           <span>{t("7일 폐사")}</span>
-          <strong>{deaths.toLocaleString()}<small>{t("수")}</small></strong>
+          <strong>{Math.round(cuDeaths ?? deaths).toLocaleString()}<small>{t("수")}</small></strong>
           <em>{t("계군 있는 농장 {n}곳", { n: active.length })}</em>
         </div>
         <div className={d.todo.cases.length ? "is-alert" : ""}>

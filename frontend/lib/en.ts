@@ -1183,4 +1183,6 @@ export const EN: Record<string, string> = {
   "백신별": "By vaccine",
   "대상 질병별": "By target disease",
   "접종 기록에 적은 수수 (없으면 0)": "Birds recorded on the vaccination (0 if blank)",
+  "새로 불러오기": "Refresh",
+  "{t} 기준": "as of {t}",
 };

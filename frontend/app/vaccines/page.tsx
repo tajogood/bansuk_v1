@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import LangToggle from "@/components/LangToggle";
 import VaccineCalendar from "@/components/viz/VaccineCalendar";
+import { usePref } from "@/lib/usePref";
 import NotificationBell from "@/components/NotificationBell";
 import { ApiError, loadSession, vaccinesApi } from "@/lib/api";
 import { DISEASES, label } from "@/lib/cases";
@@ -21,8 +22,8 @@ function DueBoard({ token }: { token: string }) {
   const lang = useLang();
   const [items, setItems] = useState<DueRow[] | null>(null);
   const [today, setToday] = useState("");
-  const [days, setDays] = useState(30);
-  const [view, setView] = useState<"calendar" | "list">("calendar");
+  const [days, setDays] = usePref("vacc_days", 30);
+  const [view, setView] = usePref<"calendar" | "list">("vacc_view", "calendar");
   useEffect(() => {
     vaccinesApi
       .due(token, days)
