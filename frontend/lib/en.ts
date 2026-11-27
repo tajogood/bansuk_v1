@@ -1178,4 +1178,9 @@ export const EN: Record<string, string> = {
   "위치 지우기": "Clear location",
   "위치를 정하지 않으면 지역 중심 근처에 대략 표시합니다.": "Without a location, the farm is shown near its region center.",
   "농장 위치 (지도 표시용)": "Farm location (for maps)",
+  "접종 건수": "Vaccinations",
+  "접종 수수": "Birds vaccinated",
+  "백신별": "By vaccine",
+  "대상 질병별": "By target disease",
+  "접종 기록에 적은 수수 (없으면 0)": "Birds recorded on the vaccination (0 if blank)",
 };

@@ -31,7 +31,7 @@ def bansuk_user(user: User = Depends(current_user)) -> User:
 
 
 class Query(BaseModel):
-    source: Literal["production", "necropsy", "lab"] = "production"
+    source: Literal["production", "necropsy", "lab", "vaccination"] = "production"
     metric: str = "lay_rate"
     x: str = "date"
     group: str = "flock"

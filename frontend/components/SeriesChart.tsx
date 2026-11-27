@@ -83,8 +83,15 @@ export default function SeriesChart({ result, kind, height = 280 }: { result: Qu
   hi += pad;
   const n = Math.max(1, xs.length - 1);
   const X = (i: number) => L + (kind === "bar" ? ((i + 0.5) / xs.length) * (W - L - R) : (i / n) * (W - L - R));
+  // 보기 좋은 눈금 (1·2·2.5·5 단위)으로 맞추고, 범위도 눈금에 맞춘다
+  const step0 = (hi - lo) / 4;
+  const mag = 10 ** Math.floor(Math.log10(step0 || 1));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((x) => x >= step0) ?? step0;
+  lo = Math.floor(lo / step) * step;
+  hi = Math.ceil(hi / step) * step;
+  const ticks: number[] = [];
+  for (let v = lo; v <= hi + step / 1000; v += step) ticks.push(+v.toFixed(6));
   const Y = (v: number) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
-  const ticks = Array.from({ length: 5 }, (_, k) => lo + ((hi - lo) * k) / 4);
   const xtickEvery = Math.max(1, Math.ceil(xs.length / 8));
 
   const onMove = (e: React.MouseEvent<SVGSVGElement>) => {

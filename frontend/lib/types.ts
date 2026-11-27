@@ -193,7 +193,7 @@ export type AdminFarm = {
 export type AuditItem = { at: string | null; actor: string | null; action: string; target: string };
 
 // ---------- 반석 데이터 분석기 ----------
-export type AnalysisSource = "production" | "necropsy" | "lab";
+export type AnalysisSource = "production" | "necropsy" | "lab" | "vaccination";
 export type AnalysisQuery = {
   source: AnalysisSource;
   disease?: string | null;

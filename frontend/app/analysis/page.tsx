@@ -47,6 +47,7 @@ function specOf(c: Catalog, source: AnalysisSource) {
 const EVENT_DEFAULTS: Record<string, Partial<AnalysisQuery>> = {
   necropsy: { metric: "cases", x: "month", group: "disease" },
   lab: { metric: "tests", x: "month", group: "disease" },
+  vaccination: { metric: "vaccinations", x: "month", group: "vaccine" },
 };
 
 function autoTitle(q: AnalysisQuery, c: Catalog | null) {
@@ -302,6 +303,7 @@ export default function AnalysisPage() {
               <option value="production">{t("생산 기록")}</option>
               <option value="lab">{t("검사 결과")}</option>
               <option value="necropsy">{t("부검 기록")}</option>
+              <option value="vaccination">{t("백신 접종")}</option>
             </select>
           </label>
           <label>

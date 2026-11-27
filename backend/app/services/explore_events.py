@@ -2,6 +2,7 @@
 
 부검 기록: 부검을 마친 건 (부검일 기준). 지표 = 부검 건수, 신고 폐사수.
 검사 결과: 발행된 검사 (채취일 기준). 지표 = 검사 건수, 양성 건수, 양성 비율, 평균 역가군(항원 하나 고를 때).
+백신 접종: 실제 접종 기록 (접종일 기준). 지표 = 접종 건수, 접종 수수. 질병별은 혼합백신 성분마다 한 번씩 센다.
 """
 from __future__ import annotations
 
@@ -11,7 +12,7 @@ from collections import defaultdict
 from sqlalchemy.orm import Session
 
 from ..lab_catalog import ANTIGENS, DISEASE_LABELS
-from ..models import Farm, Flock, House, LabSample, LabSubmission, NecropsyCase, SeroResult
+from ..models import Farm, Flock, House, LabSample, LabSubmission, NecropsyCase, SeroResult, Vaccination, Vaccine
 from ..settings import AGE_DAY_BASE
 
 EVENT_SOURCES = {
@@ -32,6 +33,15 @@ EVENT_SOURCES = {
             "titer_mean": {"label": "평균 역가군", "unit": "", "note": "혈청 검사의 층·차량별 평균을 시료수로 가중 평균"},
         },
         "groups": {"disease": "질병별", "antigen": "항원별", "flock": "계군별", "house": "계사별", "farm": "농장별",
+                   "region": "지역별", "none": "전체 합계"},
+    },
+    "vaccination": {
+        "label": "백신 접종",
+        "metrics": {
+            "vaccinations": {"label": "접종 건수", "unit": "건"},
+            "birds_vaccinated": {"label": "접종 수수", "unit": "수", "note": "접종 기록에 적은 수수 (없으면 0)"},
+        },
+        "groups": {"vaccine": "백신별", "disease": "대상 질병별", "flock": "계군별", "house": "계사별", "farm": "농장별",
                    "region": "지역별", "none": "전체 합계"},
     },
 }
@@ -90,6 +100,21 @@ def run_events(db: Session, q: dict, allowed_farm_ids: set[int] | None) -> dict:
             dis = [d for d in (src or []) if isinstance(d, str) and d.isascii()] or ["other"]
             for d in dis if group == "disease" or want_disease else dis[:1]:
                 rows.append((c.farm_id, c.house_id, c.flock_id, day, d, None, {"cases": 1, "dead": c.dead_count or 0}))
+    elif source == "vaccination":
+        vaccines = {v.id: v for v in db.query(Vaccine)}
+        qry = db.query(Vaccination)
+        if farm_ids:
+            qry = qry.join(Flock, Flock.id == Vaccination.flock_id).filter(Flock.farm_id.in_(farm_ids))
+        for v in qry:
+            fl = flocks.get(v.flock_id)
+            vac = vaccines.get(v.vaccine_id)
+            if not fl:
+                continue
+            dis = [c.get("disease") for c in (vac.components or []) if isinstance(c, dict) and c.get("disease")] if vac else []
+            dis = dis or ["other"]
+            for d in dis if group == "disease" or want_disease else dis[:1]:
+                rows.append((fl.farm_id, v.house_id, fl.id, v.date, d, f"v{v.vaccine_id}",
+                             {"vaccinations": 1, "birds": v.birds or 0, "vname": vac.name if vac else "?"}))
     else:
         qry = db.query(LabSubmission).filter(LabSubmission.status == "issued", LabSubmission.sampled_on.isnot(None))
         if farm_ids:
@@ -135,6 +160,7 @@ def run_events(db: Session, q: dict, allowed_farm_ids: set[int] | None) -> dict:
             continue
         if metric in ("positive", "positive_rate") and antigen is not None:
             continue
+        vname = vals.pop("vname", None) if source == "vaccination" else None
         fl = flocks.get(flock_id) if flock_id else None
         age = (day - fl.placed_on).days + AGE_DAY_BASE if fl else None
         if (age_from or age_to) and (age is None or (age_from and age < age_from) or (age_to and age > age_to)):
@@ -145,6 +171,8 @@ def run_events(db: Session, q: dict, allowed_farm_ids: set[int] | None) -> dict:
         f = farms.get(farm_id)
         if group == "disease":
             gk, lab = f"d:{disease}", DISEASE_LABELS.get(disease, "기타")
+        elif group == "vaccine":
+            gk, lab = f"{antigen}", vname or "?"
         elif group == "antigen":
             if not antigen:
                 continue
@@ -180,6 +208,10 @@ def run_events(db: Session, q: dict, allowed_farm_ids: set[int] | None) -> dict:
             return b.get("cases") or None
         if metric == "dead_reported":
             return b.get("dead")
+        if metric == "vaccinations":
+            return b.get("vaccinations") or None
+        if metric == "birds_vaccinated":
+            return b.get("birds") if b.get("vaccinations") else None
         if metric == "tests":
             return b.get("tests") or None
         if metric == "positive":
@@ -194,7 +226,7 @@ def run_events(db: Session, q: dict, allowed_farm_ids: set[int] | None) -> dict:
         if v is not None:
             pts[gk].append([xv, round(v, 3)])
     series = [{"key": gk, "label": labels[gk], "points": sorted(p, key=lambda z: z[0])} for gk, p in pts.items()]
-    series.sort(key=lambda s: -sum(p[1] for p in s["points"]) if metric in ("cases", "tests", "positive", "dead_reported") else s["label"])
+    series.sort(key=lambda s: -sum(p[1] for p in s["points"]) if metric in ("cases", "tests", "positive", "dead_reported", "vaccinations", "birds_vaccinated") else s["label"])
     truncated = len(series) > MAX_SERIES
     series = series[:MAX_SERIES]
     m = spec["metrics"][metric]
