@@ -6,13 +6,11 @@ import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
 import type { CircleMarker, LayerGroup, Map as LMap, TileLayer } from "leaflet";
 
-/* OSM 데이터 기반 타일: 밝은 테마는 CARTO Voyager, 어두운 테마는 CARTO Dark Matter */
-export function tileFor(dark: boolean) {
+/* OpenStreetMap 기본 타일. 어두운 테마는 CSS 필터로 타일 색을 뒤집어 어둡게 보인다 (bansuk.css .osm). */
+export function tileFor(_dark: boolean) {
   return {
-    url: dark
-      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-      : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   };
 }
 const isDark = () => typeof document !== "undefined" && document.documentElement.dataset.theme === "dark";
@@ -67,7 +65,7 @@ export default function OsmMap({
       L.current = mod;
       const m = mod.map(box.current, { zoomControl: true, scrollWheelZoom: false, attributionControl: true }).setView([36.4, 127.8], 7);
       const tf = tileFor(isDark());
-      tiles.current = mod.tileLayer(tf.url, { maxZoom: 18, subdomains: "abcd", attribution: tf.attribution }).addTo(m);
+      tiles.current = mod.tileLayer(tf.url, { maxZoom: 18, attribution: tf.attribution }).addTo(m);
       // 지도를 눌렀을 때만 휠 확대 (페이지 스크롤을 방해하지 않게)
       m.on("click", () => m.scrollWheelZoom.enable());
       m.on("mouseout", () => m.scrollWheelZoom.disable());

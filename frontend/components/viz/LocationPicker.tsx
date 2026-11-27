@@ -44,7 +44,7 @@ export default function LocationPicker({
       L.current = mod;
       const m = mod.map(box.current, { scrollWheelZoom: true }).setView(lat !== null && lng !== null ? [lat, lng] : [36.4, 127.8], lat !== null ? 12 : 7);
       const tf = tileFor(document.documentElement.dataset.theme === "dark");
-      mod.tileLayer(tf.url, { maxZoom: 18, subdomains: "abcd", attribution: tf.attribution }).addTo(m);
+      mod.tileLayer(tf.url, { maxZoom: 18, attribution: tf.attribution }).addTo(m);
       m.on("click", (e) => {
         const la = +e.latlng.lat.toFixed(5);
         const ln = +e.latlng.lng.toFixed(5);

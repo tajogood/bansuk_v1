@@ -1044,3 +1044,6 @@ html[data-theme="dark"] body.bs-on .rp-toolbar button:not(.rp-primary),
 html[data-theme="dark"] body.bs-on .rp-toolbar a { background: var(--bs-surface); color: var(--bs-ink); border: 1px solid var(--bs-line); }
 html[data-theme="dark"] body.bs-on .rp-toolbar label { color: var(--bs-ink-2); }
 body.bs-on .rp-toolbar button:not(.rp-primary) { border-radius: 10px; }
+/* 지도 타일 톤: 밝은 테마는 채도를 살짝 낮춰 차분하게, 어두운 테마는 색을 뒤집어 짙은 지도로 */
+body.bs-on .osm .leaflet-tile-pane { filter: saturate(0.7) contrast(0.96) brightness(1.02); }
+html[data-theme="dark"] body.bs-on .osm .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.55); }
