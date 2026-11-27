@@ -36,7 +36,14 @@ def compute(r: DailyRecord) -> dict:
         "mortality_per_10k": round((r.mortality or 0) / n * 10000, 1)
         if n and r.mortality is not None
         else None,
+        "water_per_bird_ml": round(r.water_l * 1000 / n, 1) if r.water_l and n else None,
     }
+    # 산란 중량: 계란 수 × 평균 난중. 사료요구율 = 사료 kg ÷ 계란 kg
+    if eggs and r.egg_weight:
+        mass = eggs * r.egg_weight / 1000
+        out["egg_mass_kg"] = round(mass, 1)
+        out["egg_mass_per_bird_g"] = round(mass * 1000 / n, 1) if n else None
+        out["fcr"] = round(r.feed_kg / mass, 2) if r.feed_kg and mass else None
     if eggs:
         out["grade_share"] = {
             g: round((r.egg(g) or 0) / eggs * 100, 1) for g in EGG_GRADES if r.egg(g)

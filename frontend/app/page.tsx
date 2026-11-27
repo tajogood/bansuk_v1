@@ -10,6 +10,7 @@ import SetPin from "@/components/SetPin";
 import { useLang, useT } from "@/lib/i18n";
 import { api, ApiError, loadSession, saveSession } from "@/lib/api";
 import { todayISO } from "@/lib/format";
+import { getViewMode, type ViewMode } from "@/lib/viewMode";
 import { enqueue, flush, isNetworkError, pending } from "@/lib/queue";
 import type { DayView, HouseView, Session, Warning } from "@/lib/types";
 
@@ -33,6 +34,13 @@ export default function Page() {
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [tab, setTab] = useState<"input" | "status" | "cases">("input");
   const [tempPin, setTempPin] = useState<string | null>(null);
+  const [view, setView] = useState<ViewMode>(() => (typeof window === "undefined" ? "mobile" : getViewMode()));
+  useEffect(() => {
+    const sync = () => setView(getViewMode());
+    sync();
+    window.addEventListener("farm-view", sync);
+    return () => window.removeEventListener("farm-view", sync);
+  }, []);
 
   const signOut = useCallback((s: Session | null) => {
     if (s) api.logout(s.token).catch(() => {});
@@ -219,11 +227,20 @@ export default function Page() {
       </main>
     );
 
+  // 농장주 PC 화면: 운영 대시보드 (입력은 /?mode=input 에서 휴대폰 화면 그대로)
+  const farmPc = !isBansukUser && view === "pc";
+  if (farmPc && qs.get("mode") !== "input" && farmId)
+    return (
+      <main>
+        <BansukFarm token={session.token} farmId={farmId} farms={session.farms} who="farm" />
+      </main>
+    );
+
   const houseIdx = day?.houses.findIndex((h) => h.house.id === houseId) ?? -1;
   const current = houseIdx >= 0 && day ? day.houses[houseIdx] : null;
 
   return (
-    <main className={!current && tab !== "input" ? "is-wide" : ""}>
+    <main className={`${!current && tab !== "input" ? "is-wide" : ""}${farmPc ? " fx-narrow" : ""}`}>
       {current && day ? (
         <HouseEntry
           key={`${current.house.id}-${day.date}`}

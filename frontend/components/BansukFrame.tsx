@@ -8,6 +8,7 @@ import NotificationBell from "./NotificationBell";
 import { api, loadSession, saveSession } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import type { Session } from "@/lib/types";
+import { getViewMode, setViewMode, type ViewMode } from "@/lib/viewMode";
 import "../app/bansuk.css";
 
 const BANSUK = new Set(["bansuk_vet", "bansuk_staff", "admin"]);
@@ -27,6 +28,9 @@ const ICONS: Record<string, string> = {
   report: "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6",
   users: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M22 21a6 6 0 0 0-4-5.6",
   farm: "M3 21V10l6-4 6 4v11M15 21V13l3-2 3 2v8M7 21v-5h4v5M2 21h20",
+  pencil: "M4 20h4L19 9l-4-4L4 16zM14 6l4 4",
+  upload: "M12 16V4M7 9l5-5 5 5M4 20h16",
+  phone: "M8 2h8a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 18h2",
 };
 
 function Icon({ name }: { name: string }) {
@@ -104,6 +108,13 @@ export default function BansukFrame({ children }: { children: React.ReactNode })
   const [path, setPath] = useState("");
   const [pal, setPal] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [view, setView] = useState<ViewMode>("mobile");
+  useEffect(() => {
+    const sync = () => setView(getViewMode());
+    sync();
+    window.addEventListener("farm-view", sync);
+    return () => window.removeEventListener("farm-view", sync);
+  }, []);
   useEffect(() => {
     try {
       const saved = localStorage.getItem("bansuk_theme");
@@ -136,7 +147,10 @@ export default function BansukFrame({ children }: { children: React.ReactNode })
     };
   }, []);
 
-  const on = !!s && BANSUK.has(s.user.role) && !s.user.must_change_pin;
+  const isBansuk = !!s && BANSUK.has(s.user.role);
+  // 농장주는 PC 화면을 고른 경우에만 데스크탑 틀을 쓴다 (입력 화면 /?mode=input 은 휴대폰 화면 그대로 가운데에)
+  const farmPc = !!s && !isBansuk && view === "pc";
+  const on = !!s && !s.user.must_change_pin && (isBansuk || farmPc);
   useEffect(() => {
     document.body.classList.toggle("bs-on", on);
     // 어두운 테마는 반석 화면에서만 (농장주·로그인 화면은 항상 밝게)
@@ -155,7 +169,16 @@ export default function BansukFrame({ children }: { children: React.ReactNode })
   };
   if (!on || !s) return <>{children}</>;
 
-  const items: Item[] = [
+  const fid = s.farms[0]?.id;
+  const farmItems: Item[] = [
+    { href: "/", label: t("농장 대시보드"), group: t("우리 농장"), icon: "home" },
+    { href: `/?farm=${fid}&mode=input`, label: t("일일 기록 입력"), group: t("우리 농장"), icon: "pencil" },
+    { href: "/cases/", label: t("폐사·부검"), group: t("우리 농장"), icon: "case" },
+    { href: "/upload/", label: t("엑셀 올리기"), group: t("기록"), icon: "upload" },
+    { href: `/flocks/?farm=${fid}`, label: t("계군 관리"), group: t("기록"), icon: "farm" },
+    { href: "/lab/", label: t("질병 검사 결과"), group: t("기록"), icon: "lab" },
+  ];
+  const items: Item[] = !isBansuk ? farmItems : [
     { href: "/", label: t("전체 농장 현황"), group: t("현황"), icon: "home" },
     { href: "/cases/", label: t("폐사·부검"), group: t("현황"), icon: "case" },
     { href: "/epidemic/", label: t("최근 유행 질병"), group: t("현황"), icon: "map" },
@@ -166,7 +189,8 @@ export default function BansukFrame({ children }: { children: React.ReactNode })
     { href: "/report/", label: t("계군 성적 보고서"), group: t("분석"), icon: "report" },
     { href: "/admin/", label: t("계정·농장 관리"), group: t("설정"), icon: "users", hide: s.user.role !== "admin" },
   ].filter((i) => !i.hide);
-  const active = (href: string) => (href === "/" ? path === "/" || path.startsWith("/?") : path.startsWith(href));
+  const active = (href: string) =>
+    href === "/" ? path === "/" || (path.startsWith("/?") && !path.includes("mode=input")) : href.startsWith("/?") ? path === href : path.startsWith(href.split("?")[0]);
   const groups = [...new Set(items.map((i) => i.group))];
 
   return (
@@ -181,7 +205,7 @@ export default function BansukFrame({ children }: { children: React.ReactNode })
           </span>
           <span>
             <strong>반석LTC</strong>
-            <small>{t("농장 관리")}</small>
+            <small>{isBansuk ? t("농장 관리") : s.farms[0]?.name}</small>
           </span>
         </a>
         <button type="button" className="bs-find" onClick={() => setPal(true)}>
@@ -211,7 +235,7 @@ export default function BansukFrame({ children }: { children: React.ReactNode })
           <span className="bs-avatar" aria-hidden>{s.user.name.slice(0, 1)}</span>
           <div className="bs-user-id">
             <strong>{s.user.name}</strong>
-            <small>{t(ROLE[s.user.role] ?? s.user.role)}</small>
+            <small>{t(ROLE[s.user.role] ?? "농장주")}</small>
           </div>
           <NotificationBell token={s.token} />
         </div>
@@ -243,7 +267,17 @@ export default function BansukFrame({ children }: { children: React.ReactNode })
           </button>
         </div>
       </aside>
-      <div className="bs-main">{children}</div>
+      <div className="bs-main">
+        {farmPc && (
+          <div className="fv-bar">
+            <button type="button" className="view-switch" onClick={() => setViewMode("mobile")}>
+              <Icon name="phone" />
+              {t("모바일 화면")}
+            </button>
+          </div>
+        )}
+        {children}
+      </div>
       {pal && <Palette items={items} farms={s.farms} onClose={() => setPal(false)} />}
     </div>
   );

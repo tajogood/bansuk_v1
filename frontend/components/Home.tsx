@@ -1,6 +1,8 @@
 "use client";
 
 import Dashboard from "./Dashboard";
+import MobileDash from "./MobileDash";
+import { setViewMode } from "@/lib/viewMode";
 import UpcomingVaccinations from "./UpcomingVaccinations";
 import HomeCases from "./HomeCases";
 import LangToggle from "./LangToggle";
@@ -55,6 +57,11 @@ export default function Home(p: Props) {
           <h1 className="farm-name">{p.day?.farm.name ?? p.farms[0]?.name}</h1>
         )}
         <span className="head-tools">
+          {!p.isBansuk && (
+            <button type="button" className="view-switch" onClick={() => setViewMode("pc")} aria-label={t("PC 화면으로 보기")}>
+              {t("PC 화면")}
+            </button>
+          )}
           <LangToggle className="link" />
           <button type="button" className="link" onClick={p.onLogout}>
             {t("로그아웃")}
@@ -81,7 +88,7 @@ export default function Home(p: Props) {
           {t("입력")}
         </button>
         <button type="button" role="tab" aria-selected={p.tab === "status"} onClick={() => p.onTab("status")}>
-          {t("현황")}
+          {t("대시보드")}
         </button>
         <button type="button" role="tab" aria-selected={p.tab === "cases"} onClick={() => p.onTab("cases")}>
           {t("폐사·부검")}
@@ -92,7 +99,9 @@ export default function Home(p: Props) {
         <HomeCases token={p.token} farmId={p.farmId} isBansuk={p.isBansuk} />
       ) : p.tab === "status" ? (
         <>
+          <MobileDash token={p.token} farmId={p.farmId} />
           <UpcomingVaccinations token={p.token} farmId={p.farmId} />
+          <h2 className="md-h">{t("같은 일령 과거 계군과 비교")}</h2>
           <Dashboard token={p.token} farmId={p.farmId} date={p.date} />
           <a className="report-link" href={`/flocks/?farm=${p.farmId}`}>
             {t("계군 관리 (입추·이동·출하)")}

@@ -28,6 +28,12 @@ EDITABLE_FIELDS = [
     "temp_min",
     "temp_max",
     "humidity",
+    "out_temp_min",
+    "out_temp_max",
+    "uniformity",
+    "feed_in_kg",
+    "feed_brand",
+    "feed_type",
     "memo",
 ]
 

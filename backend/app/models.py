@@ -260,6 +260,12 @@ class DailyRecord(Base):
     temp_min: Mapped[float | None] = mapped_column(Float)
     temp_max: Mapped[float | None] = mapped_column(Float)
     humidity: Mapped[float | None] = mapped_column(Float)  # %
+    out_temp_min: Mapped[float | None] = mapped_column(Float)  # 외기온도
+    out_temp_max: Mapped[float | None] = mapped_column(Float)
+    uniformity: Mapped[float | None] = mapped_column(Float)  # 체중 균일도 %
+    feed_in_kg: Mapped[float | None] = mapped_column(Float)  # 사료 입고
+    feed_brand: Mapped[str | None] = mapped_column(String(40))  # 사료 회사
+    feed_type: Mapped[str | None] = mapped_column(String(40))  # 사료 종류 (산란중기, 피크사료 등)
     memo: Mapped[str | None] = mapped_column(Text)
 
     source: Mapped[str] = mapped_column(String(20), default="manual")  # manual | upload | sensor

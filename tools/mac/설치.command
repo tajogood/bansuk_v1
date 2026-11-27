@@ -46,6 +46,12 @@ if [[ "$FIRST" == 1 ]]; then
   fi
 fi
 
+# 데모농장 실제 기록: backend/data/demo_farm.xlsx 를 넣어 두면 새 파일일 때 한 번 다시 채운다
+if [[ -f backend/data/demo_farm.xlsx && backend/data/demo_farm.xlsx -nt backend/data/demo_farm.done ]]; then
+  say "데모농장 기록을 엑셀로 다시 채웁니다"
+  ( set -a; . backend/.env; set +a; cd backend && .venv/bin/python -m app.demo_excel data/demo_farm.xlsx ) && touch backend/data/demo_farm.done || echo "  데모농장 엑셀 반영 실패 (계속 진행)"
+fi
+
 open "http://localhost:$(grep -E '^PORT=' backend/.env | cut -d= -f2 || echo 8000)"
 say "끝났습니다. 위의 암호화 키는 꼭 따로 보관하세요. 이 창은 닫아도 서버는 계속 돕니다"
 read -r -p "엔터를 누르면 창이 닫힙니다 " _

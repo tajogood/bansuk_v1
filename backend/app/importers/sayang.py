@@ -41,13 +41,18 @@ SECTION_MAP: dict[str, str] = {
     "주령": "_age",
     "계사온도": "_temp",
     "사료교체": "_feed_stage",
+    "사료입고": "feed_in_kg",
+    "외기온도": "_out_temp",
 }
+# 생산 기록이 있는 날로 보는 항목 (수수만 수식으로 이어진 빈 날은 버린다)
+PRODUCTION_KEYS = {"mortality", "feed_kg", "water_l", "egg_weight", "body_weight"}
 # 이관하지 않는 계산·집계 항목 (참고용 목록)
-SKIPPED_SECTIONS = ["산란율", "사료입고", "수당사료섭취량", "수사비", "사료요구율", "총산란수", "누적산란수", "HH산란지수"]
+SKIPPED_SECTIONS = ["산란율", "수당사료섭취량", "수사비", "사료요구율", "총산란수", "누적산란수", "HH산란지수"]
 
 TITLE_RE = re.compile(r"(\d{4})\s*년?\s*\(\s*(\d{1,2})\s*월")
 SHEET_RE = re.compile(r"^\s*(\d{2}|\d{4})\s*[.\s]?\s*(\d{1,2})\D*$")
 BODY_WT_RE = re.compile(r"평균체중\s*[:：]?\s*([\d,]+(?:\.\d+)?)")
+UNIFORM_RE = re.compile(r"균일도\s*[:：]?\s*(\d+(?:\.\d+)?)")
 HOUSE_RE = re.compile(r"^(\d+)동|^(육성사|육성동)")
 FEED_BRAND_RE = re.compile(r"\((.+?)\)")
 
@@ -121,6 +126,7 @@ def parse_workbook(path: str) -> tuple[list[DayRow], Report]:
     rep = Report()
     out: dict[tuple[dt.date, str], DayRow] = {}
     seen_months: set[tuple[int, int]] = set()
+    out_temp: dict[dt.date, tuple[float, float]] = {}
 
     # 시트 이름이 연월인 시트를 먼저 읽고, '복사본' 같은 시트는 같은 달이 없을 때만 쓴다.
     sheets = sorted(wb.worksheets, key=lambda w: 0 if SHEET_RE.match(w.title) else 1)
@@ -152,6 +158,19 @@ def parse_workbook(path: str) -> tuple[list[DayRow], Report]:
             if r[0]:
                 a = re.sub(r"\s", "", str(r[0])).lower()
                 section = next((v for k, v in SECTION_MAP.items() if a.startswith(k.lower())), None)
+            if section == "_out_temp":
+                # 외기온도는 농장 하나에 한 줄 (B열 비어 있음)
+                if r[0]:
+                    for i in range(31):
+                        try:
+                            day = dt.date(year, month, i + 1)
+                        except ValueError:
+                            break
+                        v = r[2 + i] if len(r) > 2 + i else None
+                        parts = re.findall(r"-?\d+(?:\.\d+)?", str(v)) if v is not None else []
+                        if len(parts) >= 2:
+                            out_temp[day] = (float(parts[0]), float(parts[1]))
+                continue
             if not section or not r[1]:
                 continue
             b = re.sub(r"\s", "", str(r[1]))
@@ -183,14 +202,20 @@ def parse_workbook(path: str) -> tuple[list[DayRow], Report]:
                     if len(parts) >= 2:
                         row.values["temp_min"], row.values["temp_max"] = float(parts[0]), float(parts[1])
                 elif section == "_feed_stage":
-                    row.feed_stage = str(v).strip()
+                    row.feed_stage = str(v).strip()[:40] or None
                 elif section == "body_weight" and isinstance(v, str):
                     bw = BODY_WT_RE.search(v)
                     if bw:
                         row.values["body_weight"] = float(bw.group(1).replace(",", ""))
+                    un = UNIFORM_RE.search(v)
+                    if un:
+                        row.values["uniformity"] = float(un.group(1))
                 else:
                     n = _num(v)
                     # 수수 0은 '계군 없음'을 뜻하므로 기록하지 않는다 (입추 전 육성사 등)
+                    # 육성사의 계란 칸 0 은 '해당 없음'
+                    if house == "육성사" and section.startswith("egg_") and n == 0:
+                        continue
                     if n is not None and n >= 0 and not (section == "bird_count" and n == 0):
                         row.values[section] = n
 
@@ -205,8 +230,19 @@ def parse_workbook(path: str) -> tuple[list[DayRow], Report]:
             if mo == 13:
                 y, mo = y + 1, 1
 
-    # 의미 있는 값이 있는 행만
-    days = [d for d in out.values() if d.values or d.age_days]
+    # 생산 기록이 있는 날만 (수수 칸은 수식으로 월말·미래까지 이어져 있다)
+    today = dt.date.today()
+    days = [
+        d for d in out.values()
+        if d.date <= today and any(k in PRODUCTION_KEYS or (k.startswith("egg_") and v) for k, v in d.values.items())
+    ]
+    for d in days:
+        if d.date in out_temp:
+            d.values["out_temp_min"], d.values["out_temp_max"] = out_temp[d.date]
+        if d.feed_brand:
+            d.values["feed_brand"] = d.feed_brand[:40]
+        if d.feed_stage:
+            d.values["feed_type"] = d.feed_stage
     days.sort(key=lambda d: (_house_sort(d.house), d.date))
     for d in days:
         eggs = sum(v for k, v in d.values.items() if k.startswith("egg_") and k != "egg_weight")

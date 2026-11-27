@@ -32,7 +32,9 @@ ALLOWED = [
     "bird_count", "mortality", "cull",
     "egg_jumbo", "egg_xl", "egg_l", "egg_m", "egg_s", "egg_double", "egg_mudae", "egg_muzung", "egg_crack", "egg_broken",
     "egg_weight", "body_weight", "feed_kg", "water_l", "temp_min", "temp_max", "humidity",
+    "out_temp_min", "out_temp_max", "uniformity", "feed_in_kg", "feed_brand", "feed_type",
 ]
+STR_FIELDS = {"feed_brand", "feed_type"}
 INT_FIELDS = {"bird_count", "mortality", "cull"} | {f for f in ALLOWED if f.startswith("egg_") and f != "egg_weight"}
 MAX_BYTES = 40 * 1024 * 1024
 
@@ -50,6 +52,9 @@ def _clean(values: dict) -> dict:
     for k in ALLOWED:
         v = values.get(k)
         if v is None or v == "":
+            continue
+        if k in STR_FIELDS:
+            out[k] = str(v)[:40]
             continue
         try:
             out[k] = int(round(float(v))) if k in INT_FIELDS else round(float(v), 2)
