@@ -103,6 +103,16 @@ export default function BansukFrame({ children }: { children: React.ReactNode })
   const [s, setS] = useState<Session | null>(null);
   const [path, setPath] = useState("");
   const [pal, setPal] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("bansuk_theme");
+      if (saved === "light" || saved === "dark") setTheme(saved);
+      else if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) setTheme("dark");
+    } catch {
+      /* 무시 */
+    }
+  }, []);
   useEffect(() => {
     const sync = () => setS(loadSession());
     sync();
@@ -129,7 +139,20 @@ export default function BansukFrame({ children }: { children: React.ReactNode })
   const on = !!s && BANSUK.has(s.user.role) && !s.user.must_change_pin;
   useEffect(() => {
     document.body.classList.toggle("bs-on", on);
-  }, [on]);
+    // 어두운 테마는 반석 화면에서만 (농장주·로그인 화면은 항상 밝게)
+    if (on && theme === "dark") document.documentElement.dataset.theme = "dark";
+    else delete document.documentElement.dataset.theme;
+    window.dispatchEvent(new Event("bansuk-theme"));
+  }, [on, theme]);
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    try {
+      localStorage.setItem("bansuk_theme", next);
+    } catch {
+      /* 무시 */
+    }
+  };
   if (!on || !s) return <>{children}</>;
 
   const items: Item[] = [
@@ -194,6 +217,19 @@ export default function BansukFrame({ children }: { children: React.ReactNode })
         </div>
         <div className="bs-user-tools">
           <LangToggle className="link" />
+          <button type="button" className="bs-theme" onClick={toggleTheme} aria-label={theme === "dark" ? t("밝은 화면으로") : t("어두운 화면으로")}>
+            {theme === "dark" ? (
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+              </svg>
+            )}
+            {theme === "dark" ? t("밝게") : t("어둡게")}
+          </button>
           <button
             type="button"
             className="link"

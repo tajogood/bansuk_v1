@@ -10,7 +10,7 @@
   border-radius: 10px;
   font-size: 16px;
   font-weight: 700;
-  background: #fff;
+  background: var(--paper);
 }
 .fl-title {
   margin: 18px 0 8px;
@@ -29,11 +29,11 @@
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--paper);
 }
 .fl-houses li.is-empty {
   border-style: dashed;
-  background: #fafbfa;
+  background: var(--wash);
 }
 .fl-house-head {
   display: flex;
@@ -78,7 +78,7 @@
   padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #fff;
+  background: var(--paper);
   font-weight: 700;
   font-size: 14px;
 }
@@ -103,7 +103,7 @@
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--paper);
 }
 .fl-closed li > div:first-child {
   display: flex;
@@ -144,7 +144,7 @@
   overflow-y: auto;
   padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
   border-radius: 18px 18px 0 0;
-  background: #fff;
+  background: var(--paper);
 }
 @media (min-width: 700px) {
   .fl-sheet-bg {
@@ -183,7 +183,7 @@
   border-radius: 10px;
   font-size: 16px;
   font-weight: 400;
-  background: #fff;
+  background: var(--paper);
   width: 100%;
 }
 

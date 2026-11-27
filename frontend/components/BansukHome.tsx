@@ -127,6 +127,9 @@ export default function BansukHome({ token }: { token: string }) {
   const deaths = active.reduce((a, f) => a + f.mortality_7d, 0);
 
   const chartSeries = active.map((f) => ({ id: f.id, name: f.name, values: f.series }));
+  // 눈금 아래 끝: 대부분의 값이 보이도록 하위 5% 값 기준 (막 산란을 시작한 계군의 낮은 값이 차트를 누르지 않게)
+  const allVals = chartSeries.flatMap((s) => s.values).filter((v): v is number => v !== null).sort((a, b) => a - b);
+  const yFloor = allVals.length ? Math.max(0, Math.floor((allVals[Math.floor(allVals.length * 0.05)] - 6) / 5) * 5) : undefined;
   const focus = pinned ?? hi;
   const counts: Record<Filter, number> = {
     all: d.farms.length,
@@ -215,7 +218,7 @@ export default function BansukHome({ token }: { token: string }) {
               ))}
             </div>
           </div>
-          <LineChart dates={d.dates} series={chartSeries} highlight={focus} onHighlight={pinned === null ? setHi : undefined} height={300} unit="%" label={t("농장별 산란율 추이")} />
+          <LineChart dates={d.dates} series={chartSeries} highlight={focus} onHighlight={pinned === null ? setHi : undefined} height={300} unit="%" yMin={yFloor} label={t("농장별 산란율 추이")} />
           <div className="legend">
             {active.map((f, i) => (
               <button
@@ -227,7 +230,7 @@ export default function BansukHome({ token }: { token: string }) {
                 onClick={() => setPinned((p) => (p === f.id ? null : f.id))}
                 aria-pressed={pinned === f.id}
               >
-                <i style={{ background: ["#1f6b4f", "#d99a00", "#3a7ca5", "#b5523b", "#6d5ba8", "#4f8f3a", "#8a6d3b", "#2a9d8f"][i % 8] }} />
+                <i style={{ background: `var(--bs-c${i % 8})` }} />
                 {f.name}
               </button>
             ))}
@@ -257,7 +260,7 @@ export default function BansukHome({ token }: { token: string }) {
                   lng: f.lng as number,
                   approx: f.approx,
                   radius: f.houses ? 6 + Math.min(6, f.houses * 1.5) : 5,
-                  color: !f.houses ? "#9aa8a0" : att ? "#b42318" : miss ? "#e8a900" : "#1f6b4f",
+                  color: !f.houses ? "#9aa8a0" : att ? "#e0442f" : miss ? "#f0b400" : "#2f9a6a",
                   tooltip:
                     `<strong>${esc(f.name)}</strong><span>${esc(f.region ?? "")}</span>` +
                     (f.lay_rate_7d !== null ? `<span>${esc(t("산란율 7일"))} ${f.lay_rate_7d.toFixed(1)}%</span>` : "") +
@@ -359,7 +362,7 @@ export default function BansukHome({ token }: { token: string }) {
                       <span className="muted-c">{t("계군 없음")}</span>
                     )}
                   </td>
-                  <td>{f.houses ? <Sparkline values={f.series.slice(-30)} color={(f.lay_rate_change ?? 0) <= -2 ? "#b42318" : "#1f6b4f"} /> : null}</td>
+                  <td>{f.houses ? <Sparkline values={f.series.slice(-30)} color={(f.lay_rate_change ?? 0) <= -2 ? "var(--bs-bad)" : "var(--bs-barn)"} /> : null}</td>
                   <td className="num strong">{f.lay_rate_7d !== null ? `${f.lay_rate_7d.toFixed(1)}%` : "–"}</td>
                   <td className="num">
                     {f.lay_rate_change === null ? "–" : (

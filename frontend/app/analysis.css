@@ -2,7 +2,7 @@
 .an-wrap {
   max-width: none;
   min-height: 100vh;
-  background: #f3f5f3;
+  background: var(--wash);
 }
 .an-pad {
   padding: 40px;
@@ -15,7 +15,7 @@
   align-items: center;
   gap: 16px;
   padding: 10px 24px;
-  background: #fff;
+  background: var(--paper);
   border-bottom: 1px solid var(--line);
 }
 .an-head h1 {
@@ -50,7 +50,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 18px;
-  background: #fff;
+  background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 12px;
   max-height: calc(100vh - 90px);
@@ -86,7 +86,7 @@
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--paper);
   color: var(--ink);
   font-size: 15px;
   font-weight: 400;
@@ -135,7 +135,7 @@ label.an-check {
   color: var(--ink-2);
 }
 .an-seg button[aria-pressed="true"] {
-  background: #fff;
+  background: var(--paper);
   color: var(--ink);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
@@ -151,7 +151,7 @@ label.an-check {
   padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--paper);
   font-weight: 600;
 }
 .an-primary {
@@ -174,7 +174,7 @@ label.an-check {
 }
 .an-card {
   padding: 16px 18px;
-  background: #fff;
+  background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 12px;
   min-width: 0;
@@ -218,7 +218,7 @@ label.an-check {
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #fff;
+  background: var(--paper);
   font-size: 13px;
   font-weight: 600;
 }
@@ -244,7 +244,7 @@ label.an-check {
   align-items: flex-end;
   padding: 12px 14px;
   border-radius: 10px;
-  background: #fffbea;
+  background: var(--tint-yellow);
   border: 1px solid #f0d77a;
   font-size: 14px;
 }
@@ -386,7 +386,7 @@ label.an-check {
 .an-table thead th {
   position: sticky;
   top: 0;
-  background: #f5f7f5;
+  background: var(--wash);
   font-weight: 600;
 }
 .an-table .num {

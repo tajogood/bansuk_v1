@@ -3,7 +3,7 @@
 /* 인터랙티브 꺾은선 차트 (SVG, 외부 라이브러리 없음)
    - 마우스를 올리면 그날의 값이 툴팁으로 나오고, 가장 가까운 선이 강조된다
    - highlight / onHighlight 로 바깥 목록(표, 범례)과 강조를 맞춘다 */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 export type Series = { id: string | number; name: string; values: (number | null)[]; color?: string; dashed?: boolean };
 
@@ -92,7 +92,31 @@ export default function LineChart({
     [series, w, height, lo, hiY, n],
   );
 
-  const colorOf = (s: Series, i: number) => s.color ?? PALETTE[i % PALETTE.length];
+  // 색은 테마 변수(--bs-c0~7)를 따른다. 변수가 없는 화면에서는 기본 팔레트
+  const colorOf = (s: Series, i: number) => s.color ?? `var(--bs-c${i % 8}, ${PALETTE[i % PALETTE.length]})`;
+  const gid = `lc${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  // 아래를 채우는 그라데이션 영역: 강조된 선, 또는 선이 3개 이하일 때 모두
+  const areaOf = (i: number) => {
+    const d = paths[i];
+    if (!d) return "";
+    const pts = d.split(/(?=[ML])/);
+    let out = "";
+    let seg: string[] = [];
+    const flush = () => {
+      if (seg.length > 1) {
+        const first = seg[0].slice(1).split(",");
+        const last = seg[seg.length - 1].slice(1).split(",");
+        out += `M${first[0]},${pad.t + ih}L${seg.map((p) => p.slice(1)).join("L")}L${last[0]},${pad.t + ih}Z`;
+      }
+      seg = [];
+    };
+    for (const p of pts) {
+      if (p[0] === "M") flush();
+      seg.push(p);
+    }
+    flush();
+    return out;
+  };
   const xTicks = useMemo(() => {
     const k = Math.max(2, Math.min(8, Math.floor(iw / 90)));
     return Array.from({ length: k }, (_, j) => Math.round((j / (k - 1)) * (n - 1)));
@@ -153,6 +177,22 @@ export default function LineChart({
             {dates[i] ? fmtDate(dates[i]) : ""}
           </text>
         ))}
+        <defs>
+          <clipPath id={`${gid}-clip`}>
+            <rect x={pad.l} y={pad.t - 4} width={iw} height={ih + 4} />
+          </clipPath>
+          {series.map((s, i) => (
+            <linearGradient key={s.id} id={`${gid}-${i}`} x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" style={{ stopColor: colorOf(s, i), stopOpacity: 0.32 }} />
+              <stop offset="1" style={{ stopColor: colorOf(s, i), stopOpacity: 0 }} />
+            </linearGradient>
+          ))}
+        </defs>
+        <g clipPath={`url(#${gid}-clip)`}>
+        {series.map((s, i) => {
+          const show = hi !== null ? s.id === hi : series.length <= 3;
+          return show ? <path key={`a-${s.id}`} d={areaOf(i)} fill={`url(#${gid}-${i})`} className="lc-area" opacity={hi !== null ? 1 : 0.55} /> : null;
+        })}
         {series.map((s, i) => {
           const isHi = hi !== null && s.id === hi;
           const dim = hi !== null && !isHi;
@@ -161,7 +201,7 @@ export default function LineChart({
               key={s.id}
               d={paths[i]}
               fill="none"
-              stroke={colorOf(s, i)}
+              style={{ stroke: colorOf(s, i) }}
               strokeWidth={isHi ? 3 : 1.8}
               strokeDasharray={s.dashed ? "5 4" : undefined}
               strokeLinejoin="round"
@@ -171,6 +211,7 @@ export default function LineChart({
             />
           );
         })}
+        </g>
         {hover !== null && (
           <g>
             <line className="lc-rule" x1={x(hover)} x2={x(hover)} y1={pad.t} y2={pad.t + ih} />
@@ -179,7 +220,7 @@ export default function LineChart({
               if (v === null || v === undefined) return null;
               const isHi = hi !== null && s.id === hi;
               if (hi !== null && !isHi) return null;
-              return <circle key={s.id} cx={x(hover)} cy={y(v)} r={isHi ? 5 : 3.5} fill="#fff" stroke={colorOf(s, i)} strokeWidth={2.4} />;
+              return <circle key={s.id} cx={x(hover)} cy={y(v)} r={isHi ? 5 : 3.5} style={{ fill: "var(--bs-surface-solid, #fff)", stroke: colorOf(s, i) }} strokeWidth={2.4} />;
             })}
           </g>
         )}
@@ -216,13 +257,20 @@ export function Sparkline({ values, w = 120, h = 32, color }: { values: (number 
   const d = pts.map(([i, v], k) => `${k ? "L" : "M"}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join("");
   const last = pts[pts.length - 1];
   const first = pts[0];
-  const c = color ?? (last[1] < first[1] - 2 ? "#b42318" : "#1f6b4f");
+  const c = color ?? (last[1] < first[1] - 2 ? "var(--bs-bad, #b42318)" : "var(--bs-barn, #1f6b4f)");
+  const sid = `sp${Math.round(Math.abs(first[1] * 1000 + last[1] * 7 + values.length))}`;
   const area = `${d}L${X(last[0]).toFixed(1)},${h}L${X(first[0]).toFixed(1)},${h}Z`;
   return (
     <svg width={w} height={h} className="spark" aria-hidden>
-      <path d={area} fill={c} opacity={0.08} />
-      <path d={d} fill="none" stroke={c} strokeWidth={1.6} strokeLinejoin="round" />
-      <circle cx={X(last[0])} cy={Y(last[1])} r={2.6} fill={c} />
+      <defs>
+        <linearGradient id={sid} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" style={{ stopColor: c, stopOpacity: 0.3 }} />
+          <stop offset="1" style={{ stopColor: c, stopOpacity: 0 }} />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#${sid})`} />
+      <path d={d} fill="none" style={{ stroke: c }} strokeWidth={1.6} strokeLinejoin="round" />
+      <circle cx={X(last[0])} cy={Y(last[1])} r={2.6} style={{ fill: c }} />
     </svg>
   );
 }

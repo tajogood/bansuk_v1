@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import type { CircleMarker, Map as LMap } from "leaflet";
 import { useT } from "@/lib/i18n";
+import { tileFor } from "./OsmMap";
 
 export default function LocationPicker({
   lat,
@@ -42,7 +43,8 @@ export default function LocationPicker({
       if (dead || !box.current || map.current) return;
       L.current = mod;
       const m = mod.map(box.current, { scrollWheelZoom: true }).setView(lat !== null && lng !== null ? [lat, lng] : [36.4, 127.8], lat !== null ? 12 : 7);
-      mod.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "&copy; OpenStreetMap" }).addTo(m);
+      const tf = tileFor(document.documentElement.dataset.theme === "dark");
+      mod.tileLayer(tf.url, { maxZoom: 18, subdomains: "abcd", attribution: tf.attribution }).addTo(m);
       m.on("click", (e) => {
         const la = +e.latlng.lat.toFixed(5);
         const ln = +e.latlng.lng.toFixed(5);

@@ -30,7 +30,7 @@
   padding: 0 16px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--paper);
   color: var(--ink);
   font-weight: 700;
   font-size: 15px;
@@ -66,7 +66,7 @@ a.lb-btn.cs-primary {
   padding: 0 10px;
   border: 1.5px solid var(--line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--paper);
   font-size: 15px;
 }
 .lb-chips {
@@ -79,7 +79,7 @@ a.lb-btn.cs-primary {
   padding: 0 14px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
-  background: #fff;
+  background: var(--paper);
   font-weight: 700;
   font-size: 14px;
 }
@@ -136,11 +136,11 @@ a.lb-btn.cs-primary {
   color: var(--caution);
 }
 .lb-badge.is-pos {
-  background: #fbe4e1;
+  background: var(--tint-red);
   color: #9b2c22;
 }
 .lb-badge.is-neg {
-  background: #e3f1e9;
+  background: var(--tint-green);
   color: var(--barn);
 }
 
@@ -202,7 +202,7 @@ a.lb-btn.cs-primary {
   text-align: left;
 }
 .lb-sero thead th {
-  background: #f3f5f3;
+  background: var(--wash);
   font-weight: 700;
 }
 .lb-sero .num {
@@ -251,7 +251,7 @@ a.lb-btn.cs-primary {
   padding: 0 10px;
   border: 1.5px solid var(--line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--paper);
   font-size: 16px;
   font-weight: 400;
 }
@@ -285,7 +285,7 @@ a.lb-btn.cs-primary {
   min-height: 44px;
   border: 1.5px solid var(--line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--paper);
   font-weight: 700;
 }
 .lb-seg button[aria-pressed="true"] {
@@ -314,7 +314,7 @@ a.lb-btn.cs-primary {
   padding: 0 14px;
   border: 1.5px dashed var(--line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--paper);
   font-weight: 700;
 }
 .lb-sero-edit fieldset {
@@ -398,7 +398,7 @@ a.lb-btn.cs-primary {
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--paper);
 }
 .ep-summary dt {
   color: var(--ink-3);

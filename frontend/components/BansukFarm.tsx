@@ -182,7 +182,7 @@ export default function BansukFarm({ token, farmId, farms }: { token: string; fa
                 onMouseEnter={() => setHi(s.id)}
                 onMouseLeave={() => setHi(null)}
               >
-                <i style={{ background: ["#1f6b4f", "#d99a00", "#3a7ca5", "#b5523b", "#6d5ba8", "#4f8f3a", "#8a6d3b", "#2a9d8f"][i % 8] }} />
+                <i style={{ background: `var(--bs-c${i % 8})` }} />
                 {s.name}
               </button>
             ))}

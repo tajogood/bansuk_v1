@@ -4,7 +4,18 @@
    대략 위치(approx)인 점은 점선 테두리. 지도 타일은 사용자 브라우저가 OSM에서 직접 받는다. */
 import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
-import type { CircleMarker, LayerGroup, Map as LMap } from "leaflet";
+import type { CircleMarker, LayerGroup, Map as LMap, TileLayer } from "leaflet";
+
+/* OSM 데이터 기반 타일: 밝은 테마는 CARTO Voyager, 어두운 테마는 CARTO Dark Matter */
+export function tileFor(dark: boolean) {
+  return {
+    url: dark
+      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  };
+}
+const isDark = () => typeof document !== "undefined" && document.documentElement.dataset.theme === "dark";
 
 export type MapPoint = {
   id: string | number;
@@ -44,6 +55,7 @@ export default function OsmMap({
   const markers = useRef<Map<string | number, CircleMarker>>(new Map());
   const L = useRef<typeof import("leaflet") | null>(null);
   const fitted = useRef(false);
+  const tiles = useRef<TileLayer | null>(null);
   const cb = useRef({ onSelect, onHover });
   cb.current = { onSelect, onHover };
 
@@ -54,12 +66,8 @@ export default function OsmMap({
       if (dead || !box.current || map.current) return;
       L.current = mod;
       const m = mod.map(box.current, { zoomControl: true, scrollWheelZoom: false, attributionControl: true }).setView([36.4, 127.8], 7);
-      mod
-        .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 18,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        })
-        .addTo(m);
+      const tf = tileFor(isDark());
+      tiles.current = mod.tileLayer(tf.url, { maxZoom: 18, subdomains: "abcd", attribution: tf.attribution }).addTo(m);
       // 지도를 눌렀을 때만 휠 확대 (페이지 스크롤을 방해하지 않게)
       m.on("click", () => m.scrollWheelZoom.enable());
       m.on("mouseout", () => m.scrollWheelZoom.disable());
@@ -67,8 +75,15 @@ export default function OsmMap({
       map.current = m;
       draw();
     });
+    // 테마가 바뀌면 타일만 바꾼다
+    const onTheme = () => {
+      if (!tiles.current) return;
+      tiles.current.setUrl(tileFor(isDark()).url);
+    };
+    window.addEventListener("bansuk-theme", onTheme);
     return () => {
       dead = true;
+      window.removeEventListener("bansuk-theme", onTheme);
       map.current?.remove();
       map.current = null;
       fitted.current = false;

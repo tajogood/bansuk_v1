@@ -18,6 +18,14 @@
   --bad-bg: #fdecea;
   --caution: #8a5a00;
   --caution-bg: #fff4d6;
+  /* 반석 화면 공통 바탕·옅은 색 (어두운 테마에서 bansuk.css가 바꾼다) */
+  --wash: #f4f6f4;
+  --tint-green: #e3f1e9;
+  --tint-blue: #e3eefb;
+  --tint-purple: #efe9f7;
+  --tint-red: #fbe4e1;
+  --tint-red-strong: #e7b4ae;
+  --tint-yellow: #fffbea;
   --radius-key: 14px;
   --radius-row: 10px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);

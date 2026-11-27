@@ -1185,4 +1185,8 @@ export const EN: Record<string, string> = {
   "접종 기록에 적은 수수 (없으면 0)": "Birds recorded on the vaccination (0 if blank)",
   "새로 불러오기": "Refresh",
   "{t} 기준": "as of {t}",
+  "밝은 화면으로": "Switch to light",
+  "어두운 화면으로": "Switch to dark",
+  "밝게": "Light",
+  "어둡게": "Dark",
 };
