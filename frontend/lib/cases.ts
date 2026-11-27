@@ -140,8 +140,9 @@ export function fmtDateTime(iso: string | null | undefined, withWeekday = true):
 export function timeAgo(iso: string | null | undefined): string {
   if (!iso) return "";
   const sec = (Date.now() - new Date(iso).getTime()) / 1000;
-  const rtf = new Intl.RelativeTimeFormat(locale(), { numeric: "auto" });
-  if (sec < 60) return rtf.format(0, "minute");
+  // "어제·그저께" 대신 "1일 전·2일 전"으로 (숫자로 통일)
+  const rtf = new Intl.RelativeTimeFormat(locale(), { numeric: "always" });
+  if (sec < 60) return rtf.format(-1, "minute");
   if (sec < 3600) return rtf.format(-Math.round(sec / 60), "minute");
   if (sec < 86400) return rtf.format(-Math.round(sec / 3600), "hour");
   return rtf.format(-Math.round(sec / 86400), "day");

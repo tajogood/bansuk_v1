@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import LangToggle from "@/components/LangToggle";
 import VaccineCalendar from "@/components/viz/VaccineCalendar";
+import PlanDialog from "@/components/PlanDialog";
 import { usePref } from "@/lib/usePref";
 import NotificationBell from "@/components/NotificationBell";
 import { ApiError, loadSession, vaccinesApi } from "@/lib/api";
@@ -24,6 +25,9 @@ function DueBoard({ token }: { token: string }) {
   const [today, setToday] = useState("");
   const [days, setDays] = usePref("vacc_days", 30);
   const [view, setView] = usePref<"calendar" | "list">("vacc_view", "calendar");
+  const [plan, setPlan] = useState<{ flockId?: number; date?: string } | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [rev, setRev] = useState(0);
   useEffect(() => {
     vaccinesApi
       .due(token, days)
@@ -32,7 +36,7 @@ function DueBoard({ token }: { token: string }) {
         setToday(r.today);
       })
       .catch(() => setItems([]));
-  }, [token, days, lang]);
+  }, [token, days, lang, rev]);
   if (!items) return <p className="cs-muted">{t("불러오는 중")}</p>;
   const groups: [string, DueRow[]][] = [
     [t("밀린 접종"), items.filter((i) => i.status === "overdue")],
@@ -49,19 +53,43 @@ function DueBoard({ token }: { token: string }) {
             </button>
           ))}
         </div>
-        <div className="seg" role="group" aria-label={t("보기")}>
-          <button type="button" aria-pressed={view === "calendar"} onClick={() => setView("calendar")}>
-            {t("달력")}
-          </button>
-          <button type="button" aria-pressed={view === "list"} onClick={() => setView("list")}>
-            {t("목록")}
+        <div className="vx-viewtools">
+          <div className="seg" role="group" aria-label={t("보기")}>
+            <button type="button" aria-pressed={view === "calendar"} onClick={() => setView("calendar")}>
+              {t("달력")}
+            </button>
+            <button type="button" aria-pressed={view === "list"} onClick={() => setView("list")}>
+              {t("목록")}
+            </button>
+          </div>
+          <button type="button" className="btn-primary vx-add" onClick={() => setPlan({})}>
+            + {t("접종 일정 추가")}
           </button>
         </div>
       </div>
+      {msg && (
+        <p className="vx-msg" role="status">
+          {msg}
+        </p>
+      )}
       {view === "calendar" && today && (
         <section className="panel">
-          <VaccineCalendar items={items} today={today} days={days} />
+          <VaccineCalendar items={items} today={today} days={days} onPick={(flockId, date) => setPlan({ flockId, date })} />
         </section>
+      )}
+      {plan && today && (
+        <PlanDialog
+          token={token}
+          today={today}
+          init={plan}
+          onClose={() => setPlan(null)}
+          onSaved={(m) => {
+            setPlan(null);
+            setMsg(m);
+            setRev((r) => r + 1);
+            setTimeout(() => setMsg(null), 4000);
+          }}
+        />
       )}
       {view === "list" && groups.map(([title, list]) => (
         <section key={title} className="vx-group">

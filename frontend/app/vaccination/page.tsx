@@ -54,7 +54,8 @@ function RecordSheet({
           route: route || null,
           birds: birds ? Number(birds) : null,
           lot: lot || null,
-          program_item_id: row?.item_id ?? null,
+          program_item_id: row && row.item_id > 0 ? row.item_id : null,
+          planned_id: row?.planned_id ?? null,
           note: note || null,
         }),
       );
@@ -123,6 +124,28 @@ function RecordSheet({
 export default function VaccinationPage() {
   const t = useT();
   const lang = useLang();
+  // 어느 화면에서 들어왔는지 보고 돌아가기 버튼 이름·위치를 정한다
+  const [backTo, setBackTo] = useState<{ href: string | null; label: string | null }>({ href: null, label: null });
+  useEffect(() => {
+    try {
+      const r = document.referrer ? new URL(document.referrer) : null;
+      if (!r || r.origin !== window.location.origin) return;
+      const p = r.pathname;
+      const label = p.startsWith("/vaccines")
+        ? t("백신 프로그램·접종")
+        : p.startsWith("/flocks")
+          ? t("계군 관리")
+          : p === "/" && r.search.includes("farm=")
+            ? t("농장 현황")
+            : p === "/"
+              ? t("전체 농장 현황")
+              : null;
+      if (label) setBackTo({ href: r.pathname + r.search, label });
+    } catch {
+      /* 무시 */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [session, setSession] = useState<Session | null>(null);
   const [flockId, setFlockId] = useState<number | null>(null);
   const [data, setData] = useState<FlockVaccination | null>(null);
@@ -169,8 +192,18 @@ export default function VaccinationPage() {
   return (
     <main className="cs-wrap">
       <header className="cs-head">
-        <a href={d ? `/flocks/?farm=${d.flock.farm?.id ?? ""}` : "/flocks/"} className="cs-back">
-          ‹ {t("계군 관리")}
+        <a
+          href={backTo.href ?? (d ? `/flocks/?farm=${d.flock.farm?.id ?? ""}` : "/flocks/")}
+          className="cs-back"
+          onClick={(e) => {
+            // 들어온 화면(접종 일정판, 농장 현황 등)으로 그대로 돌아간다
+            if (backTo.href && window.history.length > 1) {
+              e.preventDefault();
+              window.history.back();
+            }
+          }}
+        >
+          ‹ {backTo.label ?? t("계군 관리")}
         </a>
         <h1>{t("백신 접종")}</h1>
         <span className="cs-spacer" />
@@ -261,7 +294,7 @@ export default function VaccinationPage() {
                 </label>
               </div>
               {d.schedule.length === 0 ? (
-                <p className="cs-muted">{t("적용한 프로그램이 없습니다.")}</p>
+                <p className="cs-muted">{t("적용한 프로그램이나 잡은 일정이 없습니다.")}</p>
               ) : (
                 <ul className="vx-schedule">
                   {rows.map((s) => (
@@ -271,7 +304,10 @@ export default function VaccinationPage() {
                         <span>{s.planned}</span>
                       </div>
                       <div className="vx-what">
-                        <strong>{s.vaccine?.name}</strong>
+                        <strong>
+                          {s.vaccine?.name}
+                          {s.planned_id && <span className="vx-oneoff">{t("개별 일정")}</span>}
+                        </strong>
                         <span className="cs-muted">
                           {s.vaccine ? diseasesText(s.vaccine.components) : ""}
                           {s.route ? ` · ${label(ROUTES, s.route)}` : ""}
@@ -284,6 +320,23 @@ export default function VaccinationPage() {
                         {d.can_edit && s.status !== "done" && (
                           <button type="button" className="vx-do" onClick={() => setSheet({ row: s })}>
                             {t("접종함")}
+                          </button>
+                        )}
+                        {d.can_edit && s.planned_id && s.status !== "done" && (
+                          <button
+                            type="button"
+                            className="vx-del"
+                            onClick={async () => {
+                              if (!window.confirm(t("{d} {v} 일정을 지울까요? 되돌릴 수 없습니다.", { d: s.planned, v: s.vaccine?.name ?? "" }))) return;
+                              try {
+                                await vaccinesApi.removePlan(session!.token, s.planned_id!);
+                                setData(await vaccinesApi.flock(session!.token, d.flock.id));
+                              } catch (err) {
+                                setError((err as Error).message);
+                              }
+                            }}
+                          >
+                            {t("일정 삭제")}
                           </button>
                         )}
                       </div>

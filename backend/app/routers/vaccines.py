@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from ..audit import audit
 from ..db import get_db
-from ..models import Flock, FlockProgram, ProgramItem, User, Vaccination, Vaccine, VaccineProgram
+from ..models import Flock, FlockProgram, PlannedVaccination, ProgramItem, User, Vaccination, Vaccine, VaccineProgram
 from ..security import BANSUK_ROLES, accessible_farm_ids, current_user, require_farm
 from ..services import vaccines as svc
 from ..services.flocks import age_days
@@ -304,6 +304,7 @@ class VaccinationIn(BaseModel):
     birds: int | None = Field(default=None, ge=0, le=2_000_000)
     lot: str | None = Field(default=None, max_length=60)
     program_item_id: int | None = None
+    planned_id: int | None = None
     performed_by: int | None = None
     note: str | None = Field(default=None, max_length=500)
 
@@ -321,6 +322,12 @@ def add_vaccination(flock_id: int, body: VaccinationIn, user: User = Depends(_ba
             raise HTTPException(400, "프로그램 항목을 찾을 수 없습니다")
         if db.query(Vaccination).filter(Vaccination.flock_id == f.id, Vaccination.program_item_id == it.id).first():
             raise HTTPException(409, "이 항목은 이미 접종 기록이 있습니다")
+    if body.planned_id is not None:
+        pl = db.get(PlannedVaccination, body.planned_id)
+        if not pl or pl.flock_id != f.id:
+            raise HTTPException(400, "접종 일정을 찾을 수 없습니다")
+        if db.query(Vaccination).filter(Vaccination.planned_id == pl.id).first():
+            raise HTTPException(409, "이 일정은 이미 접종 기록이 있습니다")
     from ..models import FlockLocation
 
     loc = (
@@ -338,6 +345,7 @@ def add_vaccination(flock_id: int, body: VaccinationIn, user: User = Depends(_ba
         birds=body.birds,
         lot=(body.lot or "").strip() or None,
         program_item_id=body.program_item_id,
+        planned_id=body.planned_id,
         performed_by=body.performed_by or user.id,
         note=(body.note or "").strip() or None,
         created_by=user.id,
@@ -358,6 +366,76 @@ def delete_vaccination(vaccination_id: int, user: User = Depends(_bansuk), db: S
     audit(db, user.id, "vaccination_deleted", target_farm_id=f.farm_id, detail={"flock_id": f.id})
     db.commit()
     return flock_vaccination(f.id, user, db)
+
+
+class PlannedIn(BaseModel):
+    vaccine_id: int
+    planned_on: dt.date
+    route: Route | None = None
+    note: str | None = Field(default=None, max_length=500)
+
+
+@router.post("/flocks/{flock_id}/planned")
+def add_planned(flock_id: int, body: PlannedIn, user: User = Depends(_bansuk), db: Session = Depends(get_db)):
+    """한 번짜리 접종 일정 추가 (접종 일정판·달력)."""
+    f = _flock(db, user, flock_id)
+    if not db.get(Vaccine, body.vaccine_id):
+        raise HTTPException(400, "백신을 찾을 수 없습니다")
+    if body.planned_on < f.placed_on:
+        raise HTTPException(400, "입추일보다 앞선 날짜입니다")
+    if f.closed_on and body.planned_on > f.closed_on:
+        raise HTTPException(400, "출하·종료된 뒤의 날짜입니다")
+    p = PlannedVaccination(flock_id=f.id, vaccine_id=body.vaccine_id, planned_on=body.planned_on, route=body.route,
+                           note=(body.note or "").strip() or None, created_by=user.id)
+    db.add(p)
+    audit(db, user.id, "vaccination_planned", target_farm_id=f.farm_id, detail={"flock_id": f.id, "date": body.planned_on.isoformat()})
+    db.commit()
+    return {"id": p.id}
+
+
+@router.delete("/planned/{planned_id}")
+def delete_planned(planned_id: int, user: User = Depends(_bansuk), db: Session = Depends(get_db)):
+    p = db.get(PlannedVaccination, planned_id)
+    if not p:
+        raise HTTPException(404, "접종 일정을 찾을 수 없습니다")
+    f = _flock(db, user, p.flock_id)
+    if db.query(Vaccination).filter(Vaccination.planned_id == p.id).first():
+        raise HTTPException(409, "이미 접종한 일정은 지울 수 없습니다. 접종 기록을 먼저 지우세요")
+    db.delete(p)
+    audit(db, user.id, "vaccination_plan_deleted", target_farm_id=f.farm_id, detail={"flock_id": f.id})
+    db.commit()
+    return {"ok": True}
+
+
+@router.get("/vaccination/targets")
+def plan_targets(user: User = Depends(_bansuk), db: Session = Depends(get_db)):
+    """일정을 잡을 수 있는 농장·계군 목록 (지금 계사에 있는 계군)."""
+    from ..models import Farm, FlockLocation, House
+
+    today = svc.local_today()
+    farms = {f.id: f for f in db.query(Farm).filter(Farm.active.is_(True))}
+    progs = {p.id: p for p in db.query(VaccineProgram)}
+    out: dict[int, dict] = {}
+    for fl in db.query(Flock).filter(Flock.status != "closed").order_by(Flock.placed_on.desc()):
+        farm = farms.get(fl.farm_id)
+        if not farm:
+            continue
+        loc = db.query(FlockLocation).filter(FlockLocation.flock_id == fl.id).order_by(FlockLocation.from_date.desc()).first()
+        house = db.get(House, loc.house_id) if loc else None
+        cur = svc.current_assignment(db, fl.id)
+        out.setdefault(farm.id, {"farm": {"id": farm.id, "name": farm.name}, "flocks": []})["flocks"].append(
+            {
+                "id": fl.id,
+                "name": fl.name,
+                "house": house.name if house else None,
+                "placed_on": fl.placed_on.isoformat(),
+                "age_days": age_days(fl, today),
+                "program": progs[cur.program_id].label if cur and cur.program_id in progs else None,
+            }
+        )
+    for v in out.values():
+        v["flocks"].sort(key=lambda x: (x["house"] or "", x["placed_on"]))
+    return {"farms": sorted(out.values(), key=lambda x: x["farm"]["name"])}
 
 
 @router.get("/vaccination/due")

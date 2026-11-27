@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 import LineChart, { Sparkline } from "./viz/LineChart";
 import OsmMap, { esc } from "./viz/OsmMap";
+import ScopeSwitch from "./ScopeSwitch";
 import { overviewApi, type Overview, type OverviewFarm } from "@/lib/api";
 import { useLang, useT } from "@/lib/i18n";
 import { useCountUp, usePref } from "@/lib/usePref";
@@ -127,6 +128,17 @@ export default function BansukHome({ token }: { token: string }) {
   const deaths = active.reduce((a, f) => a + f.mortality_7d, 0);
 
   const chartSeries = active.map((f) => ({ id: f.id, name: f.name, values: f.series }));
+  // 최근 2주 농장별 산란율: 최근 14일 평균과 그 전 14일 평균
+  const avg = (xs: (number | null)[]) => {
+    const v = xs.filter((x): x is number => x !== null);
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+  };
+  const twoWeek = active
+    .map((f) => ({ f, now: avg(f.series.slice(-14)), prev: avg(f.series.slice(-28, -14)) }))
+    .filter((r) => r.now !== null)
+    .sort((a, b) => (b.now as number) - (a.now as number));
+  const twMin = twoWeek.length ? Math.max(0, Math.floor((Math.min(...twoWeek.flatMap((r) => [r.now as number, r.prev ?? (r.now as number)])) - 8) / 10) * 10) : 0;
+  const pctX = (v: number) => `${Math.max(0, Math.min(100, ((v - twMin) / (100 - twMin)) * 100))}%`;
   // 눈금 아래 끝: 대부분의 값이 보이도록 하위 5% 값 기준 (막 산란을 시작한 계군의 낮은 값이 차트를 누르지 않게)
   const allVals = chartSeries.flatMap((s) => s.values).filter((v): v is number => v !== null).sort((a, b) => a - b);
   const yFloor = allVals.length ? Math.max(0, Math.floor((allVals[Math.floor(allVals.length * 0.05)] - 6) / 5) * 5) : undefined;
@@ -162,16 +174,16 @@ export default function BansukHome({ token }: { token: string }) {
               </button>
             )}
           </p>
-          <h1>{t("전체 농장 현황")}</h1>
+          <div className="bh-title-row">
+            <h1>{t("전체 농장 현황")}</h1>
+            <ScopeSwitch farms={d.farms.map((f) => ({ id: f.id, name: f.name }))} current={null} />
+          </div>
         </div>
         <div className="bh-head-actions">
           <button type="button" className="bh-search-btn" onClick={() => window.dispatchEvent(new Event("bansuk-palette"))}>
             {t("농장·메뉴 찾기")}
             <kbd>⌘K</kbd>
           </button>
-          <a className="btn-primary" href="/admin/">
-            {t("농장 추가")}
-          </a>
         </div>
       </header>
 
@@ -204,6 +216,7 @@ export default function BansukHome({ token }: { token: string }) {
       </section>
 
       <div className="bh-top">
+        <div className="bh-left">
         <section className="panel bh-chart">
           <div className="panel-head">
             <div>
@@ -218,7 +231,7 @@ export default function BansukHome({ token }: { token: string }) {
               ))}
             </div>
           </div>
-          <LineChart dates={d.dates} series={chartSeries} highlight={focus} onHighlight={pinned === null ? setHi : undefined} height={300} unit="%" yMin={yFloor} label={t("농장별 산란율 추이")} />
+          <LineChart dates={d.dates} series={chartSeries} highlight={focus} onHighlight={pinned === null ? setHi : undefined} height={340} unit="%" yMin={yFloor} label={t("농장별 산란율 추이")} />
           <div className="legend">
             {active.map((f, i) => (
               <button
@@ -236,6 +249,46 @@ export default function BansukHome({ token }: { token: string }) {
             ))}
           </div>
         </section>
+
+        <section className="panel bh-compare">
+          <div className="panel-head">
+            <div>
+              <h2>{t("최근 2주 농장별 산란율")}</h2>
+              <p className="muted-s">{t("막대 = 최근 14일 평균, 세로 눈금 = 그 전 14일 평균")}</p>
+            </div>
+          </div>
+          <ol className="cmp">
+            {twoWeek.map(({ f, now, prev }, i) => {
+              const delta = prev !== null ? (now as number) - prev : null;
+              return (
+                <li
+                  key={f.id}
+                  className={`${focus === f.id ? "is-hi" : ""}${focus !== null && focus !== f.id ? " is-dim" : ""}`}
+                  onMouseEnter={() => pinned === null && setHi(f.id)}
+                  onMouseLeave={() => pinned === null && setHi(null)}
+                >
+                  <a href={`/?farm=${f.id}`}>
+                    <span className="cmp-rank">{i + 1}</span>
+                    <span className="cmp-name">{f.name}</span>
+                    <span className="cmp-track">
+                      <span className={`cmp-bar${delta !== null && delta <= -2 ? " is-bad" : ""}`} style={{ width: pctX(now as number) }} />
+                      {prev !== null && <span className="cmp-prev" style={{ left: pctX(prev) }} title={t("그 전 14일 {v}%", { v: prev.toFixed(1) })} />}
+                    </span>
+                    <span className="cmp-val">{(now as number).toFixed(1)}%</span>
+                    <span className={`cmp-delta ${delta === null ? "" : delta <= -2 ? "bad" : delta < 0 ? "soft" : "good"}`}>
+                      {delta === null ? "–" : `${delta > 0 ? "▲" : delta < 0 ? "▼" : ""} ${Math.abs(delta).toFixed(1)}%p`}
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+          </ol>
+          <p className="cmp-scale">
+            <span>{twMin}%</span>
+            <span>100%</span>
+          </p>
+        </section>
+        </div>
 
         <div className="bh-right">
         <section className="panel bh-map">
@@ -376,7 +429,7 @@ export default function BansukHome({ token }: { token: string }) {
                   <td className="num">
                     {f.vacc_overdue ? <span className="tag tag-bad">{t("밀림 {n}", { n: f.vacc_overdue })}</span> : f.vacc_week ? <span className="tag">{t("{n}건", { n: f.vacc_week })}</span> : "–"}
                   </td>
-                  <td className={`num ${md >= 2 ? "warn-c" : "muted-c"}`}>{f.last_input ? (md === 0 ? t("오늘") : md === 1 ? t("어제") : t("{n}일 전", { n: md })) : "–"}</td>
+                  <td className={`num ${md >= 2 ? "warn-c" : "muted-c"}`}>{f.last_input ? (md === 0 ? t("오늘") : t("{n}일 전", { n: md })) : "–"}</td>
                 </tr>
               );
             })}

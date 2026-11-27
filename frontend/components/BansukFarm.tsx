@@ -10,6 +10,7 @@ import Dashboard from "./Dashboard";
 import HomeCases from "./HomeCases";
 import UpcomingVaccinations from "./UpcomingVaccinations";
 import LineChart from "./viz/LineChart";
+import ScopeSwitch from "./ScopeSwitch";
 import { api } from "@/lib/api";
 import { useLang, useT } from "@/lib/i18n";
 import { usePref } from "@/lib/usePref";
@@ -97,20 +98,12 @@ export default function BansukFarm({ token, farmId, farms }: { token: string; fa
 
   return (
     <div className="bh bf">
-      <nav className="crumbs" aria-label={t("위치")}>
-        <a href="/">{t("전체 농장 현황")}</a>
-        <span aria-hidden>/</span>
-        <select value={farmId} onChange={(e) => (window.location.href = `/?farm=${e.target.value}`)} aria-label={t("농장 선택")}>
-          {farms.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.name}
-            </option>
-          ))}
-        </select>
-      </nav>
       <header className="bh-head">
         <div>
-          <h1>{name}</h1>
+          <div className="bh-title-row">
+            <h1>{name}</h1>
+            <ScopeSwitch farms={farms} current={farmId} />
+          </div>
           <p className="bh-date">
             {t("계사 {n}동", { n: houses.length })}, {t("오늘 입력 {a}/{b}", { a: entered, b: day?.houses.length ?? 0 })}
           </p>

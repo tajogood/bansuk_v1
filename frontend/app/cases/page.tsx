@@ -75,7 +75,7 @@ function CaseList({ session, bansuk }: { session: Session; bansuk: boolean }) {
 
   const groups: [string, NecropsyCase[], string?][] = bansuk
     ? [
-        [t("반석이 할 일"), cases.filter((c) => c.status === "reported" || (c.status === "scheduling" && c.awaiting === "bansuk") || c.status === "done"), t("새 신고, 농장의 시간 요청, 결과 작성")],
+        [t("할 일"), cases.filter((c) => c.status === "reported" || (c.status === "scheduling" && c.awaiting === "bansuk") || c.status === "done"), t("새 신고, 농장의 시간 요청, 결과 작성")],
         [t("예정된 부검"), cases.filter((c) => c.status === "scheduled").sort((a, b) => (a.scheduled_at ?? "").localeCompare(b.scheduled_at ?? ""))],
         [t("농장 답 기다리는 중"), cases.filter((c) => c.status === "scheduling" && c.awaiting === "farm")],
         [t("최종 진단 대기"), cases.filter((c) => c.status === "shared" && c.needs_diagnosis), t("결과는 공유했지만 질병을 아직 정하지 않은 건")],

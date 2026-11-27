@@ -159,3 +159,32 @@ def test_weekly_digest_for_bansuk(client):
     week = [x for x in client.get("/api/notifications", headers=v).json()["items"] if x["kind"] == "vaccination_week"]
     assert len(week) == 1 and week[0]["data"]["count"] >= 1 and week[0]["data"]["farms"] == 1
     db.close()
+
+
+def test_planned_one_off_vaccination(client):
+    """프로그램 없이 접종 일정판에서 한 번짜리 일정을 잡고, 접종하면 완료, 접종한 일정은 못 지운다."""
+    v, f = H(client, "01011111111"), H(client, "01000000000")
+    nd, _, _ = make_program(client, v)
+    fid = client.ids["flock"]
+    # 농장주는 일정을 만들 수 없다
+    assert client.post(f"/api/flocks/{fid}/planned", headers=f, json={"vaccine_id": nd["id"], "planned_on": T.isoformat()}).status_code == 403
+    # 입추 전 날짜는 안 됨
+    assert client.post(f"/api/flocks/{fid}/planned", headers=v, json={"vaccine_id": nd["id"], "planned_on": (T - dt.timedelta(days=60)).isoformat()}).status_code == 400
+    r = client.post(f"/api/flocks/{fid}/planned", headers=v, json={"vaccine_id": nd["id"], "planned_on": (T + dt.timedelta(days=3)).isoformat(), "note": "보강 접종"})
+    assert r.status_code == 200, r.text
+    pid = r.json()["id"]
+    # 프로그램이 없어도 접종 일정판에 나온다
+    due = client.get("/api/vaccination/due?days=14", headers=v).json()["items"]
+    row = next(x for x in due if x.get("planned_id") == pid)
+    assert row["status"] == "due" and row["item_id"] == -pid and row["program"] == "개별 일정"
+    # 일정 잡을 대상 목록
+    tg = client.get("/api/vaccination/targets", headers=v).json()["farms"]
+    assert tg[0]["flocks"][0]["id"] == fid
+    # 접종 → 완료, 같은 일정 두 번은 안 됨, 접종한 일정은 못 지움
+    r = client.post(f"/api/flocks/{fid}/vaccinations", headers=v, json={"date": T.isoformat(), "vaccine_id": nd["id"], "planned_id": pid})
+    assert next(s for s in r.json()["schedule"] if s.get("planned_id") == pid)["status"] == "done"
+    assert client.post(f"/api/flocks/{fid}/vaccinations", headers=v, json={"date": T.isoformat(), "vaccine_id": nd["id"], "planned_id": pid}).status_code == 409
+    assert client.delete(f"/api/planned/{pid}", headers=v).status_code == 409
+    # 접종 안 한 일정은 지울 수 있다
+    p2 = client.post(f"/api/flocks/{fid}/planned", headers=v, json={"vaccine_id": nd["id"], "planned_on": (T + dt.timedelta(days=9)).isoformat()}).json()["id"]
+    assert client.delete(f"/api/planned/{p2}", headers=v).status_code == 200

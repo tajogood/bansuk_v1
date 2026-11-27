@@ -385,7 +385,8 @@ export type VaccineItem = { id: number; name: string; maker: string | null; kind
 export type ProgramItemRow = { id?: number; age_days: number; vaccine_id: number; vaccine?: string; kind?: string | null; route: string | null; default_route?: string | null; note: string | null };
 export type ProgramSummary = { id: number; name: string; version: number; label: string; based_on_id: number | null; description: string | null; active: boolean; flocks: number; item_count: number; items?: ProgramItemRow[] };
 export type ScheduleRow = {
-  item_id: number;
+  item_id: number; // 음수면 개별 일정 (planned_id)
+  planned_id?: number;
   program: string;
   age_days: number;
   planned: string;
@@ -405,6 +406,10 @@ export type FlockVaccination = {
   can_edit: boolean;
 };
 export type DueRow = ScheduleRow & { flock_id: number; farm: { id: number; name: string }; house: string | null; placed_on: string };
+export type PlanTarget = {
+  farm: { id: number; name: string };
+  flocks: { id: number; name: string | null; house: string | null; placed_on: string; age_days: number; program: string | null }[];
+};
 
 // ---------- 질병 검사 결과 ----------
 export type LabKind = "pcr" | "serology" | "culture" | "other";

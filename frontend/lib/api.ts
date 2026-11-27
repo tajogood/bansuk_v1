@@ -1,5 +1,6 @@
 import type {
   DailyRecord,
+  PlanTarget,
   LabelPhoto,
   LabelPhotoBrief,
   LabelSummary,
@@ -313,10 +314,14 @@ export const vaccinesApi = {
   flock: (t: string, flockId: number) => request<FlockVaccination>(`/api/flocks/${flockId}/vaccination`, {}, t),
   assign: (t: string, flockId: number, b: { program_id: number | null; from_date: string; reason?: string | null }) =>
     request<FlockVaccination>(`/api/flocks/${flockId}/program`, json("POST", b), t),
-  record: (t: string, flockId: number, b: { date: string; vaccine_id: number; route?: string | null; birds?: number | null; lot?: string | null; program_item_id?: number | null; note?: string | null }) =>
+  record: (t: string, flockId: number, b: { date: string; vaccine_id: number; route?: string | null; birds?: number | null; lot?: string | null; program_item_id?: number | null; planned_id?: number | null; note?: string | null }) =>
     request<FlockVaccination>(`/api/flocks/${flockId}/vaccinations`, json("POST", b), t),
   removeRecord: (t: string, id: number) => request<FlockVaccination>(`/api/vaccinations/${id}`, { method: "DELETE" }, t),
   due: (t: string, days = 14) => request<{ items: DueRow[]; today: string }>(`/api/vaccination/due?days=${days}`, {}, t),
+  targets: (t: string) => request<{ farms: PlanTarget[] }>("/api/vaccination/targets", {}, t),
+  plan: (t: string, flockId: number, b: { vaccine_id: number; planned_on: string; route?: string | null; note?: string | null }) =>
+    request<{ id: number }>(`/api/flocks/${flockId}/planned`, json("POST", b), t),
+  removePlan: (t: string, id: number) => request<{ ok: boolean }>(`/api/planned/${id}`, { method: "DELETE" }, t),
 };
 
 export const labApi = {

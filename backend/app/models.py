@@ -534,7 +534,23 @@ class Vaccination(Base):
     birds: Mapped[int | None] = mapped_column(Integer)
     lot: Mapped[str | None] = mapped_column(String(60))
     program_item_id: Mapped[int | None] = mapped_column(ForeignKey("program_item.id"))  # 프로그램 항목에 따른 접종
+    planned_id: Mapped[int | None] = mapped_column(ForeignKey("planned_vaccination.id"))  # 개별 일정에 따른 접종
     performed_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    note: Mapped[str | None] = mapped_column(String(500))
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class PlannedVaccination(Base):
+    """프로그램과 별개로 잡은 한 번짜리 접종 일정 (접종 일정판·달력에서 만든다)."""
+
+    __tablename__ = "planned_vaccination"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    flock_id: Mapped[int] = mapped_column(ForeignKey("flock.id"), index=True)
+    vaccine_id: Mapped[int] = mapped_column(ForeignKey("vaccine.id"))
+    planned_on: Mapped[dt.date] = mapped_column(Date, index=True)
+    route: Mapped[str | None] = mapped_column(String(20))
     note: Mapped[str | None] = mapped_column(String(500))
     created_by: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())

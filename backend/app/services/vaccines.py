@@ -99,6 +99,32 @@ def schedule(db: Session, flock: Flock, today: dt.date | None = None) -> list[di
                     "done": {"id": rec.id, "date": rec.date.isoformat(), "lot": rec.lot} if rec else None,
                 }
             )
+    # 개별 일정 (프로그램과 별개). item_id는 음수로 구분한다.
+    from ..models import PlannedVaccination
+
+    done_p = {v.planned_id: v for v in db.query(Vaccination).filter(Vaccination.flock_id == flock.id, Vaccination.planned_id.isnot(None))}
+    for p in db.query(PlannedVaccination).filter(PlannedVaccination.flock_id == flock.id):
+        if flock.closed_on and p.planned_on > flock.closed_on:
+            continue
+        v = vaccines.get(p.vaccine_id)
+        rec = done_p.get(p.id)
+        day = p.planned_on
+        status = "done" if rec else "overdue" if day < today else "due" if day <= today + dt.timedelta(days=DUE_DAYS) else "upcoming"
+        out.append(
+            {
+                "item_id": -p.id,
+                "planned_id": p.id,
+                "program": "개별 일정",
+                "age_days": (day - flock.placed_on).days + 1,
+                "planned": day.isoformat(),
+                "vaccine": {"id": v.id, "name": v.name, "kind": v.kind, "components": v.components} if v else None,
+                "route": p.route or (v.route if v else None),
+                "note": p.note,
+                "status": status,
+                "done": {"id": rec.id, "date": rec.date.isoformat(), "lot": rec.lot} if rec else None,
+            }
+        )
+    out.sort(key=lambda x: x["planned"])
     return out
 
 
@@ -113,7 +139,13 @@ def due_board(db: Session, farm_ids: set[int] | None, days: int = 14) -> list[di
     farms = {f.id: f for f in db.query(Farm)}
     out = []
     for f in q:
-        if not current_assignment(db, f.id) and not db.query(FlockProgram).filter(FlockProgram.flock_id == f.id).first():
+        from ..models import PlannedVaccination
+
+        if (
+            not current_assignment(db, f.id)
+            and not db.query(FlockProgram).filter(FlockProgram.flock_id == f.id).first()
+            and not db.query(PlannedVaccination).filter(PlannedVaccination.flock_id == f.id).first()
+        ):
             continue
         loc = (
             db.query(FlockLocation).filter(FlockLocation.flock_id == f.id).order_by(FlockLocation.from_date.desc()).first()

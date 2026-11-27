@@ -12,7 +12,17 @@ function addDays(iso: string, n: number) {
   return d.toISOString().slice(0, 10);
 }
 
-export default function VaccineCalendar({ items, today, days }: { items: DueRow[]; today: string; days: number }) {
+export default function VaccineCalendar({
+  items,
+  today,
+  days,
+  onPick,
+}: {
+  items: DueRow[];
+  today: string;
+  days: number;
+  onPick?: (flockId: number, date: string) => void; // 빈 칸을 누르면 그 계군·날짜로 일정 추가
+}) {
   const t = useT();
   const lang = useLang();
   const [tip, setTip] = useState<{ x: number; y: number; row: DueRow } | null>(null);
@@ -52,7 +62,16 @@ export default function VaccineCalendar({ items, today, days }: { items: DueRow[
               <span>{r.house}</span>
             </a>
             {cols.map((c, i) => (
-              <div key={c} style={{ gridColumn: i + 2, gridRow: 1 }} className={`vcal-cell${i === todayIdx ? " is-today" : ""}${weekday(c) === 0 ? " is-sun" : ""}`} />
+              <button
+                key={c}
+                type="button"
+                style={{ gridColumn: i + 2, gridRow: 1 }}
+                className={`vcal-cell${i === todayIdx ? " is-today" : ""}${weekday(c) === 0 ? " is-sun" : ""}${c >= today ? " is-pickable" : ""}`}
+                disabled={!onPick || c < today}
+                onClick={() => onPick?.(r.flock, c)}
+                aria-label={t("{r} {d}에 접종 일정 추가", { r: `${r.farm} ${r.house}`, d: c })}
+                title={c >= today ? t("{d} 일정 추가", { d: c.slice(5) }) : undefined}
+              />
             ))}
             {r.items.map((it) => {
               const idx = colOf(it.planned);

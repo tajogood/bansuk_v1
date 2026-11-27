@@ -96,11 +96,12 @@ export default function CasePhotos({
         <h2>{t("사진")}</h2>
         {canUpload && (
           <div className="cs-photo-btns">
-            <button type="button" onClick={() => camera.current?.click()} disabled={!!busy}>
+            {/* 휴대폰(농장·현장)은 카메라를 쓰고, 데스크탑(반석)은 파일 업로드 하나만 */}
+            <button type="button" className="cs-photo-camera" onClick={() => camera.current?.click()} disabled={!!busy}>
               {t("사진 찍기")}
             </button>
             <button type="button" onClick={() => album.current?.click()} disabled={!!busy}>
-              {t("앨범에서 고르기")}
+              {t("업로드하기")}
             </button>
             <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={(e) => upload(e.target.files)} />
             <input ref={album} type="file" accept="image/*" multiple hidden onChange={(e) => upload(e.target.files)} />

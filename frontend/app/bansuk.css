@@ -1047,3 +1047,80 @@ body.bs-on .rp-toolbar button:not(.rp-primary) { border-radius: 10px; }
 /* 지도 타일 톤: 밝은 테마는 채도를 살짝 낮춰 차분하게, 어두운 테마는 색을 뒤집어 짙은 지도로 */
 body.bs-on .osm .leaflet-tile-pane { filter: saturate(0.7) contrast(0.96) brightness(1.02); }
 html[data-theme="dark"] body.bs-on .osm .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.55); }
+
+/* 상위로 돌아가기: 반석 화면에서도 보이게 (농장주 처음 화면으로 가는 링크만 숨김) */
+body.bs-on .cs-back { display: inline-flex; align-items: center; gap: 4px; padding: 7px 14px 7px 10px; border: 1px solid var(--bs-line); border-radius: 999px; background: var(--bs-surface); color: var(--bs-ink-2); font-size: 14px; font-weight: 600; text-decoration: none; backdrop-filter: blur(10px); cursor: pointer; }
+body.bs-on .cs-back:hover { color: var(--bs-ink); border-color: var(--bs-barn); }
+body.bs-on a.cs-back[href="/"] { display: none; }
+/* 데스크탑에서는 카메라 대신 업로드 버튼 하나 */
+body.bs-on .cs-photo-camera { display: none; }
+
+/* ---------- 제목 옆 전체↔농장 전환 ---------- */
+.bh-title-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.scope { display: inline-flex; align-items: center; padding: 4px; gap: 2px; border-radius: 14px; background: var(--bs-surface); border: 1px solid var(--bs-line); box-shadow: var(--bs-shadow); backdrop-filter: blur(12px); }
+.scope > a, .scope-farm { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 10px; color: var(--bs-ink-2); font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.scope > a:hover, .scope-farm:hover { color: var(--bs-ink); background: var(--bs-hover); }
+.scope .is-on { background: linear-gradient(180deg, #1d5a43 0%, #10362a 100%); color: #fff; box-shadow: 0 4px 12px -4px rgba(16, 54, 42, 0.5); }
+html[data-theme="dark"] .scope .is-on { background: var(--bs-accent); color: var(--bs-accent-ink); }
+.scope-farm select { appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: inherit; font: inherit; padding-right: 18px; cursor: pointer; outline: none; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: right 6px center, right 1px center; background-size: 5px 5px; background-repeat: no-repeat; }
+.scope-farm select option { color: #17241d; }
+.scope-farm:focus-within { outline: 2px solid var(--bs-barn); outline-offset: 1px; }
+
+/* ---------- 왼쪽 열: 추이 차트 + 2주 비교 (오른쪽 지도·할 일과 높이 맞춤) ---------- */
+.bh-left { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.bh-top { align-items: start; }
+.bh-compare { padding-bottom: 12px; }
+.cmp { list-style: none; margin: 0; padding: 0; }
+.cmp li a { display: grid; grid-template-columns: 22px 110px minmax(0, 1fr) 64px 76px; align-items: center; gap: 12px; padding: 7px 8px; border-radius: 10px; color: var(--bs-ink); text-decoration: none; transition: background 0.12s, opacity 0.15s; }
+.cmp li a:hover, .cmp li.is-hi a { background: var(--bs-hover); }
+.cmp li.is-dim { opacity: 0.45; }
+.cmp-rank { color: var(--bs-ink-3); font-size: 12px; font-weight: 700; text-align: center; }
+.cmp-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmp-track { position: relative; height: 12px; border-radius: 6px; background: var(--bs-line-2); }
+.cmp-bar { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; background: linear-gradient(90deg, rgba(31, 107, 79, 0.55) 0%, var(--bs-barn) 70%, #7ccf5a 100%); transition: width 0.5s cubic-bezier(0.3, 0.7, 0.2, 1); }
+html[data-theme="dark"] .cmp-bar { background: linear-gradient(90deg, rgba(86, 197, 146, 0.35) 0%, var(--bs-barn) 70%, var(--bs-accent) 100%); }
+.cmp-bar.is-bad { background: linear-gradient(90deg, rgba(180, 35, 24, 0.35) 0%, var(--bs-bad) 100%); }
+.cmp-prev { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--bs-ink); opacity: 0.55; }
+.cmp-val { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cmp-delta { text-align: right; font-size: 13px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cmp-delta.good { color: var(--bs-barn); }
+.cmp-delta.soft { color: var(--bs-ink-3); }
+.cmp-delta.bad { color: var(--bs-bad); }
+.cmp-scale { display: flex; justify-content: space-between; margin: 4px 0 0; padding: 0 148px 0 152px; color: var(--bs-ink-3); font-size: 11.5px; }
+@media (prefers-reduced-motion: reduce) { .cmp-bar { transition: none; } }
+.bh-top > .bh-right { align-self: stretch; }
+.bh-right .bh-alerts { flex: 1; display: flex; flex-direction: column; }
+.bh-right .alert-list { max-height: none; flex: 1; }
+
+/* ---------- 접종 일정 추가 ---------- */
+.vx-viewtools { display: flex; align-items: center; gap: 10px; }
+.vx-msg { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--bs-barn-soft); color: var(--bs-barn); font-weight: 600; font-size: 14px; }
+.vcal-cell { border: 0; padding: 0; background: transparent; }
+.vcal-cell.is-pickable { cursor: copy; }
+.vcal-cell.is-pickable:hover { background: var(--bs-barn-soft); box-shadow: inset 0 0 0 1.5px var(--bs-barn); border-radius: 6px; }
+.vcal-cell.is-pickable:hover::after { content: "+"; display: grid; place-items: center; height: 100%; color: var(--bs-barn); font-weight: 800; }
+.vcal-cell:disabled { cursor: default; }
+.vx-oneoff { margin-left: 8px; padding: 1px 7px; border-radius: 6px; background: var(--tint-blue); color: #2c6a99; font-size: 11.5px; font-weight: 700; vertical-align: 2px; }
+html[data-theme="dark"] .vx-oneoff { color: #8cc6ee; }
+.vx-del { margin-left: 6px; border: 0; background: none; color: var(--ink-3); font-size: 13px; text-decoration: underline; cursor: pointer; }
+.vx-del:hover { color: var(--bad); }
+.pd-backdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 20px; background: rgba(8, 26, 19, 0.5); backdrop-filter: blur(4px); }
+.pd { width: min(620px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; padding: 22px 24px; border-radius: 22px; background: var(--bs-surface-solid, #fff); color: var(--bs-ink, #17241d); border: 1px solid var(--bs-line, #dbe2dc); box-shadow: 0 30px 80px -20px rgba(8, 26, 19, 0.5); animation: pal-in 0.14s ease-out; }
+.pd-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.pd-head h2 { margin: 0; font-size: 20px; font-weight: 800; }
+.pd-x { border: 0; background: none; font-size: 26px; line-height: 1; color: var(--bs-ink-3, #7d8c83); cursor: pointer; }
+.pd-mode { margin-bottom: 8px; }
+.pd-help { margin: 4px 0 14px; color: var(--bs-ink-3, #7d8c83); font-size: 13.5px; line-height: 1.55; }
+.pd-field { display: flex; flex-direction: column; gap: 6px; margin: 0 0 14px; padding: 0; border: 0; min-width: 0; }
+.pd-field > span, .pd-field > legend { font-size: 13.5px; font-weight: 600; color: var(--bs-ink-2, #4a5b51); padding: 0; margin-bottom: 6px; }
+.pd-field input, .pd-field select { padding: 10px 12px; border: 1px solid var(--bs-line, #dbe2dc); border-radius: 12px; background: var(--bs-surface, #fff); color: inherit; font: inherit; font-size: 15px; }
+.pd-row { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; }
+.pd-flocks { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.pd-flock { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; padding: 10px 12px; border: 1.5px solid var(--bs-line, #dbe2dc); border-radius: 12px; cursor: pointer; transition: border-color 0.12s, background 0.12s; }
+.pd-flock input { grid-row: 1 / 3; accent-color: var(--bs-barn, #1f6b4f); width: 16px; height: 16px; }
+.pd-flock strong { font-size: 14.5px; }
+.pd-flock span { color: var(--bs-ink-3, #7d8c83); font-size: 12.5px; }
+.pd-flock.is-on { border-color: var(--bs-barn, #1f6b4f); background: var(--bs-barn-soft, #e2efe7); }
+.pd-err { margin: 0 0 10px; color: var(--bs-bad, #b42318); font-weight: 600; font-size: 14px; }
+.pd-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+@media (max-width: 560px) { .pd-row { grid-template-columns: 1fr; } }
